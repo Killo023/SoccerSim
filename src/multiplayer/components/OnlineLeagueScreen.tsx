@@ -94,6 +94,7 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
     if (!canvas) return
     const renderer = new MatchRenderer(canvas)
 
+    const isMobile = 'ontouchstart' in window && window.innerWidth < 768
     const engine = new MatchEngine({
       homeTeam,
       awayTeam,
@@ -114,6 +115,7 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
         }
       },
     })
+    if (isMobile) engine.setSpeed(4)
     engine.start()
 
     const handleResize = () => { if (canvas) renderer.resize(canvas) }
@@ -447,10 +449,20 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     try {
       let currentWeek = l.current_week || 1
-      const totalWeeks = matchesRef.current.length > 0 ? Math.max(...matchesRef.current.map(m => m.week_number)) : 38
+      let totalWeeks = matchesRef.current.length > 0 ? Math.max(...matchesRef.current.map(m => m.week_number)) : 38
       let advanced = false
 
       while (currentWeek <= totalWeeks) {
+        const { data: dbLeague } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
+        if (dbLeague && dbLeague.current_week > currentWeek) {
+          currentWeek = dbLeague.current_week
+          const freshM = await getLeagueMatches(leagueId)
+          matchesRef.current = freshM
+          setMatches(freshM)
+          totalWeeks = freshM.length > 0 ? Math.max(...freshM.map(m => m.week_number)) : 38
+          continue
+        }
+
         const weekMatches = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
         if (weekMatches.length === 0) {
           currentWeek++
@@ -481,7 +493,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         }
 
         const results = await simulateWeek(weekMatches)
-        await advanceLeagueWeek(leagueId)
+        await advanceLeagueWeek(leagueId, currentWeek)
 
         const updatedMatches = matchesRef.current.map(m => {
           const r = results.find(x => x.id === m.id)
@@ -489,7 +501,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         })
         matchesRef.current = updatedMatches
         setMatches(updatedMatches)
-        setLeague(prev => prev ? { ...prev, current_week: prev.current_week ? prev.current_week + 1 : 1 } : prev)
+        setLeague(prev => prev ? { ...prev, current_week: (prev.current_week ?? 0) + 1 } : prev)
 
         currentWeek++
         advanced = true
@@ -551,6 +563,12 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   async function handlePhysicsFinish(result: { homeGoals: number; awayGoals: number; homeShots: number; awayShots: number; homeShotsOnTarget: number; awayShotsOnTarget: number; homePossession: number }) {
     if (!physicsMatch) return
     playingRef.current = false
+
+    const { data: existing } = await supabase.from('matches').select('status,home_goals,away_goals').eq('id', physicsMatch.matchId).maybeSingle()
+    if (existing?.status === 'finished') {
+      setPhysicsMatch(null)
+      return
+    }
 
     await updateMatchResult(physicsMatch.matchId, {
       home_goals: result.homeGoals,

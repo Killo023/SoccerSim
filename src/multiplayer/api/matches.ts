@@ -11,6 +11,12 @@ export async function saveMatchResult(match: Omit<MatchRecord, 'id' | 'played_at
 }
 
 export async function updateMatchResult(id: string, updates: Partial<Omit<MatchRecord, 'id' | 'created_at'>>): Promise<boolean> {
+  const { data: existing } = await supabase.from('matches').select('status').eq('id', id).maybeSingle()
+  if (existing?.status === 'finished') {
+    console.log('Match already finished in DB, not overwriting')
+    return true
+  }
+
   const { error } = await supabase.rpc('update_match_result', {
     p_match_id: id,
     p_home_goals: updates.home_goals ?? 0,
@@ -32,15 +38,8 @@ export async function updateMatchResult(id: string, updates: Partial<Omit<MatchR
       .eq('status', 'pending')
       .select('id')
     if (directError || (data ?? []).length === 0) {
-      console.warn('Pending-status direct update failed, trying force update without status filter:', directError?.message)
-      const { error: forceErr } = await supabase
-        .from('matches')
-        .update(updates)
-        .eq('id', id)
-      if (forceErr) {
-        console.error('Force match update also failed:', forceErr.message)
-        return false
-      }
+      console.warn('Match already finished or direct update blocked (status not pending):', directError?.message)
+      return false
     }
     return true
   }
