@@ -12,6 +12,8 @@ const POSITION_LABELS: Record<string, string> = {
   CM: 'CM', CAM: 'CAM', LM: 'LM', RM: 'RM', LW: 'LW', RW: 'RW', ST: 'ST',
 }
 
+const DRAFT_TIMER_SECONDS = 300
+
 function formatOVR(attrs: { pace: number; shooting: number; passing: number; dribbling: number; defending: number; physical: number }): number {
   return Math.round((attrs.pace + attrs.shooting + attrs.passing + attrs.dribbling + attrs.defending + attrs.physical) / 6)
 }
@@ -33,6 +35,7 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  const [countdown, setCountdown] = useState(DRAFT_TIMER_SECONDS)
 
   const [formation, setFormation] = useState<FormationName>('4-4-2')
   const [slots, setSlots] = useState<Slot[]>(() => createEmptySlots('4-4-2'))
@@ -93,6 +96,11 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
             setCurrentSlotIdx(nextUnfilled)
             fetchOptionsForSlot(restored, nextUnfilled)
           }
+        } else {
+          const initial = createEmptySlots('4-4-2')
+          setSlots(initial)
+          setCurrentSlotIdx(0)
+          fetchOptionsForSlot(initial, 0)
         }
         setLoading(false)
       } catch (err: any) {
@@ -101,6 +109,22 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
       }
     })()
   }, [leagueId, user?.id])
+
+  // Countdown timer
+  useEffect(() => {
+    if (done || loading) return
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          handleAutoFinish()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [done, loading])
 
   function fetchOptionsForSlot(currentSlots: Slot[], idx: number) {
     const slot = currentSlots[idx]
@@ -134,6 +158,32 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
     }
 
     const picks = newSlots
+      .filter(s => s.filled && s.player)
+      .map((s, i) => ({
+        league_id: leagueId,
+        member_id: myMember.id,
+        player_name: s.player!.name,
+        player_club: s.player!.clubShortName,
+        position: s.position,
+        attributes: s.player!.attrs as any,
+        pick_round: i,
+        pick_order: i,
+      }))
+    await saveDraftPicks(leagueId, myMember.id, picks)
+    setCountdown(DRAFT_TIMER_SECONDS)
+  }
+
+  async function handleAutoFinish() {
+    if (!myMember) return
+    const finalSlots = slots.map((slot, i) => {
+      if (slot.filled) return slot
+      const exclude = slots.filter(s => s.filled && s.player).map(s => s.player!.name)
+      const autoPick = getPlayersForPosition(slot.position, 1, exclude)
+      return { position: slot.position, filled: true, player: autoPick[0] || null }
+    })
+    setSlots(finalSlots)
+    setDone(true)
+    const picks = finalSlots
       .filter(s => s.filled && s.player)
       .map((s, i) => ({
         league_id: leagueId,
@@ -189,11 +239,19 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
     )
   }
 
+  const minutes = Math.floor(countdown / 60)
+  const seconds = countdown % 60
+
   return (
     <div className="mp-creation">
       <div className="mp-creation-header">
         <div className="mp-creator-info">
           <span className="mp-creator-name">Draft</span>
+        </div>
+        <div className="mp-timer">
+          <span className={`mp-timer-value ${countdown <= 60 ? 'urgent' : ''}`}>
+            {minutes}:{seconds.toString().padStart(2, '0')}
+          </span>
         </div>
         <div className="mp-draft-progress">
           <span className="mp-draft-count">{filledCount}/11</span>

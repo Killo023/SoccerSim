@@ -3061,6 +3061,36 @@ html, body, #app {
 }
 
 @media (max-width: 480px) {
+  .mp-draft-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .mp-draft-pitch-col {
+    width: 100%;
+    min-width: unset;
+    max-height: 200px;
+    padding: 8px;
+    border-right: none;
+    border-bottom: 1px solid #2a2a3e;
+  }
+  .mp-draft-panel-col {
+    overflow: visible;
+    flex: none;
+  }
+  .mp-draft-options {
+    flex-direction: column;
+  }
+  .mp-draft-card {
+    min-width: unset;
+  }
+  .mp-draft-card-attrs {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .mp-draft-card-attrs .mp-draft-attr {
+    min-width: 45px;
+  }
+
   .menu-title h1 {
     font-size: 22px;
   }
