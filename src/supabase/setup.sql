@@ -76,6 +76,8 @@ ALTER TABLE draft_picks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 
 -- 3. HELPER FUNCTIONS (SECURITY DEFINER bypasses RLS)
+
+-- Check membership WITHOUT referencing league_members (to avoid recursion)
 CREATE OR REPLACE FUNCTION is_league_member(league_id UUID, user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -85,6 +87,7 @@ AS $$
   SELECT EXISTS (SELECT 1 FROM public.league_members WHERE league_members.league_id = is_league_member.league_id AND profile_id = is_league_member.user_id);
 $$;
 
+-- Join a league by invite code
 CREATE OR REPLACE FUNCTION join_league_by_code(invite_code TEXT, user_id UUID)
 RETURNS JSON
 LANGUAGE plpgsql
@@ -105,6 +108,27 @@ BEGIN
   IF FOUND THEN RETURN json_build_object('error', 'Already a member of this league'); END IF;
   INSERT INTO public.league_members (league_id, profile_id, team_name, team_color) VALUES (target_league.id, user_id, 'My Team', '#3388ff');
   RETURN row_to_json(target_league)::json;
+END;
+$$;
+
+-- Get all members of a league (bypasses RLS — used by lobby)
+CREATE OR REPLACE FUNCTION get_league_members(target_league_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
+DECLARE
+  result JSON;
+BEGIN
+  SELECT json_agg(row_to_json(m)) INTO result
+  FROM (
+    SELECT lm.*, row_to_json(p) AS profile
+    FROM public.league_members lm
+    LEFT JOIN public.profiles p ON p.id = lm.profile_id
+    WHERE lm.league_id = target_league_id
+  ) m;
+  RETURN COALESCE(result, '[]'::json);
 END;
 $$;
 
@@ -133,9 +157,11 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Owners can update their leagues" ON leagues;
   CREATE POLICY "Owners can update their leagues" ON leagues FOR UPDATE USING (auth.uid() = owner_id);
 
+  -- league_members: simple policy — user can see their own row only
+  -- (get_league_members RPC bypasses RLS for the lobby)
   DROP POLICY IF EXISTS "Members can view their own memberships" ON league_members;
   CREATE POLICY "Members can view their own memberships" ON league_members FOR SELECT USING (
-    profile_id = auth.uid() OR is_league_member(league_id, auth.uid())
+    profile_id = auth.uid()
   );
 
   DROP POLICY IF EXISTS "Users can join leagues" ON league_members;

@@ -94,21 +94,15 @@ export async function getLeagueByInviteCode(code: string): Promise<League | null
 }
 
 export async function getLeagueMembers(leagueId: string): Promise<(LeagueMember & { profile: { username: string; display_name: string } })[]> {
-  const { data, error } = await supabase
-    .from('league_members')
-    .select('*')
-    .eq('league_id', leagueId)
+  // Use SECURITY DEFINER RPC to bypass RLS
+  const { data, error } = await supabase.rpc('get_league_members', { target_league_id: leagueId })
   if (error) throw error
-  const members = (data ?? []) as LeagueMember[]
-  const enriched = await Promise.all(members.map(async (m) => {
-    try {
-      const p = await supabase.from('profiles').select('username, display_name').eq('id', m.profile_id).single()
-      return { ...m, profile: p.data ?? { username: '?', display_name: '?' } }
-    } catch {
-      return { ...m, profile: { username: '?', display_name: '?' } }
-    }
-  }))
-  return enriched as any
+  if (!data) return []
+  const parsed: any[] = typeof data === 'string' ? JSON.parse(data) : data
+  return parsed.map((m: any) => ({
+    ...m,
+    profile: m.profile?.username ? m.profile : { username: '?', display_name: '?' },
+  })) as any
 }
 
 export async function getUserLeagues(profileId: string): Promise<(League & { member: LeagueMember })[]> {
