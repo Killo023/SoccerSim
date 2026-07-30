@@ -77,7 +77,7 @@ function generateDoubleRoundRobin(teamNames: string[]): [string, string][][] {
   return [...rounds, ...secondHalf]
 }
 
-const BOT_TEAM_COUNT = 8
+const TOTAL_TEAMS = 20
 
 function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
   homeTeam: TeamData
@@ -288,7 +288,8 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         const usedNames = new Set(ht.map(t => t.teamName))
         const leagueDef = LEAGUES.find(def => def.id === l.league_type)
         const botPool = leagueDef?.clubs ?? ALL_CLUBS
-        const bots = botPool.filter(c => !usedNames.has(c.name)).slice(0, BOT_TEAM_COUNT)
+        const botCount = Math.max(0, TOTAL_TEAMS - ht.length)
+        const bots = botPool.filter(c => !usedNames.has(c.name)).slice(0, botCount)
         botClubsRef.current = bots
         setBotClubs(bots)
 
@@ -367,7 +368,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         leagueRef.current = freshLeague
         setLeague(freshLeague)
       }
-    }, 5000)
+    }, 2000)
     return () => clearInterval(interval)
   }, [loading, league])
 
@@ -513,18 +514,21 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const currentWeek = l.current_week || 1
     const pending = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
     const humanMatch = pending.find(m => m.home_member_id && m.away_member_id)
-    if (!humanMatch) return
-
-    const claimed = await claimMatch(humanMatch.id)
-    if (!claimed) {
-      setError('Match is already being played by another player.')
-      return
-    }
+    if (!humanMatch) { setError('No human-vs-human match found this week.'); return }
 
     const humans = humanTeamsRef.current
     const ht = humans.find(t => t.memberId === humanMatch.home_member_id)
     const at = humans.find(t => t.memberId === humanMatch.away_member_id)
-    if (!ht || !at || ht.players.length < 11 || at.players.length < 11) return
+    if (!ht || !at || ht.players.length < 11 || at.players.length < 11) { setError('Team data incomplete.'); return }
+
+    const claimed = await claimMatch(humanMatch.id)
+    if (!claimed) {
+      const fallbackOk = await updateMatchResult(humanMatch.id, { status: 'playing' })
+      if (!fallbackOk) {
+        setError('Could not start match. It may already be in progress.')
+        return
+      }
+    }
 
     const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
     const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
@@ -656,6 +660,19 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
   const standings = computeStandings(allTeams, matches)
 
+  async function handleRefresh() {
+    const [freshMatches, freshLeague] = await Promise.all([
+      getLeagueMatches(leagueId),
+      getLeague(leagueId),
+    ])
+    matchesRef.current = freshMatches
+    setMatches(freshMatches)
+    if (freshLeague) {
+      leagueRef.current = freshLeague
+      setLeague(freshLeague)
+    }
+  }
+
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Building league schedule...</p></div>
   if (!league) return <div className="auth-page"><div className="auth-card"><p>League not found</p></div></div>
 
@@ -673,6 +690,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         <h1>{leagueName}</h1>
         <span className="ol-season-badge">Season 1</span>
         <span className="ol-season-badge">{allTeams.length} teams</span>
+        <button className="ol-btn ol-btn-small" onClick={handleRefresh} style={{ marginLeft: 'auto', padding: '4px 12px' }}>⟳</button>
       </div>
 
       <div className="ol-progress-bar">

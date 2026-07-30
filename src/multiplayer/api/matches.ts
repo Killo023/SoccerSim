@@ -43,6 +43,9 @@ export async function updateMatchResult(id: string, updates: Partial<Omit<MatchR
 export async function claimMatch(matchId: string, userId?: string): Promise<boolean> {
   const updates: any = { status: 'playing' }
   if (userId) updates.playing_member_id = userId
+  const { error: rpcErr } = await supabase.rpc('claim_match', { p_match_id: matchId, p_user_id: userId ?? null })
+  if (!rpcErr) return true
+  console.warn('claim_match RPC failed, falling back to direct update:', rpcErr.message)
   const { data } = await supabase
     .from('matches')
     .update(updates)
@@ -59,7 +62,7 @@ export async function getLeagueMatches(leagueId: string): Promise<MatchRecord[]>
     .eq('league_id', leagueId)
     .order('week_number')
     .order('created_at')
-    .limit(5000)
+    .limit(10000)
   return (data ?? []) as MatchRecord[]
 }
 
