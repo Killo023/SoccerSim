@@ -473,11 +473,22 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         if (humanMatch) {
           const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
           if (!dbM || dbM.status !== 'finished') {
-            const humans = humanTeamsRef.current
-            const ht = humans.find(t => t.memberId === humanMatch.home_member_id)
-            const at = humans.find(t => t.memberId === humanMatch.away_member_id)
+            setSimulating(false)
+            const [freshMembers, freshPicks] = await Promise.all([
+              getLeagueMembers(leagueId),
+              getDraftPicks(leagueId),
+            ])
+            const freshHumans = freshMembers.map(member => ({
+              memberId: member.id,
+              memberName: (member as any).profile?.display_name || '?',
+              teamName: member.team_name,
+              teamColor: member.team_color,
+              players: freshPicks.filter(p => p.member_id === member.id),
+            }))
+            humanTeamsRef.current = freshHumans
+            const ht = freshHumans.find(t => t.memberId === humanMatch.home_member_id)
+            const at = freshHumans.find(t => t.memberId === humanMatch.away_member_id)
             if (ht && at && ht.players.length >= 11 && at.players.length >= 11) {
-              setSimulating(false)
               const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
               const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
               playingRef.current = true
@@ -747,7 +758,9 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
               ))}
             </div>
           </div>
-          <span className="ol-hm-auto-label">Match starting...</span>
+          <button onClick={handlePlayMatch} className="ol-btn ol-btn-play">
+            Play Match
+          </button>
         </div>
       )}
 
