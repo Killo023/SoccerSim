@@ -34,7 +34,17 @@ export async function createLeague(
     .select()
     .single()
   if (error) throw error
-  return data as League
+
+  const league = data as League
+
+  await supabase.from('league_members').insert({
+    league_id: league.id,
+    profile_id: ownerId,
+    team_name: `${name} FC`,
+    team_color: '#3498db',
+  })
+
+  return league
 }
 
 export async function joinLeague(inviteCode: string, profileId: string): Promise<League> {

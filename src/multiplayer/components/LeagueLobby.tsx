@@ -27,7 +27,11 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [leagueId])
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 3000)
+    return () => clearInterval(interval)
+  }, [leagueId])
 
   const currentMember = members.find(m => m.profile_id === user?.id)
   const isOwner = league?.owner_id === user?.id
