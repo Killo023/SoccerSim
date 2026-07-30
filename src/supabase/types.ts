@@ -25,6 +25,7 @@ export interface LeagueMember {
   team_name: string
   team_color: string
   draft_completed: boolean
+  ready: boolean
   joined_at: string
 }
 

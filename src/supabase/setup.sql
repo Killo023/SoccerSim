@@ -31,9 +31,11 @@ CREATE TABLE IF NOT EXISTS league_members (
   team_name TEXT NOT NULL DEFAULT 'My Team',
   team_color TEXT NOT NULL DEFAULT '#ff4444',
   draft_completed BOOLEAN NOT NULL DEFAULT false,
+  ready BOOLEAN NOT NULL DEFAULT false,
   joined_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   UNIQUE(league_id, profile_id)
 );
+ALTER TABLE league_members ADD COLUMN IF NOT EXISTS ready BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS draft_picks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -163,6 +165,15 @@ LANGUAGE sql
 SECURITY DEFINER
 AS $$
   UPDATE public.league_members SET draft_completed = true WHERE id = p_member_id;
+$$;
+
+-- Set a member's ready status
+CREATE OR REPLACE FUNCTION set_member_ready(p_member_id UUID, p_ready BOOLEAN)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.league_members SET ready = p_ready WHERE id = p_member_id;
 $$;
 
 -- Check if all members have completed drafts

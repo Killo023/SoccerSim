@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/context/useAuth'
 import { getLeague, getLeagueMembers, updateMemberTeam, updateLeagueStatus } from '../api/leagues'
 import { allDraftsComplete } from '../api/draft'
 import { InviteLink } from './InviteLink'
+import { supabase } from '../../supabase/client'
 import type { League, LeagueMember } from '../../supabase/types'
 
 export function LeagueLobby({ leagueId }: { leagueId: string }) {
@@ -16,14 +17,15 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
 
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  const currentMember = members.find(m => m.profile_id === user?.id)
+  const isOwner = league?.owner_id === user?.id
+
   async function load() {
     try {
       const [l, m] = await Promise.all([getLeague(leagueId), getLeagueMembers(leagueId)])
       if (!l) { setLoadError('League not found'); setLoading(false); return }
       setLeague(l)
       setMembers(m)
-      const myMember = m.find(member => member.profile_id === user?.id)
-      if (myMember) setTeamName(myMember.team_name)
       if (l && l.status === 'drafting') {
         const done = await allDraftsComplete(leagueId)
         setAllDrafted(done)
@@ -41,8 +43,10 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
     return () => clearInterval(interval)
   }, [leagueId])
 
-  const currentMember = members.find(m => m.profile_id === user?.id)
-  const isOwner = league?.owner_id === user?.id
+  useEffect(() => {
+    const myMember = members.find(m => m.profile_id === user?.id)
+    if (myMember && !editingTeam) setTeamName(myMember.team_name)
+  }, [members, user?.id, editingTeam])
 
   async function handleSaveTeam() {
     if (!currentMember) return
@@ -54,6 +58,12 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
   async function handleStartDraft() {
     if (!league) return
     await updateLeagueStatus(league.id, 'drafting')
+    load()
+  }
+
+  async function handleToggleReady() {
+    if (!currentMember) return
+    await supabase.rpc('set_member_ready', { p_member_id: currentMember.id, p_ready: !currentMember.ready })
     load()
   }
 
@@ -75,6 +85,8 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
 
   if (!league) return <div className="auth-page"><div className="auth-card"><p>League not found</p></div></div>
 
+  const allReady = members.length >= 2 && members.every(m => m.ready)
+
   return (
     <div className="auth-page">
       <div className="auth-card league-lobby">
@@ -89,8 +101,17 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
             <li key={m.id} style={{ borderLeftColor: m.team_color }}>
               <span className="member-name">{m.profile.display_name}</span>
               <span className="member-team">{m.team_name}</span>
-              <span className="member-status">{m.draft_completed ? '✅ Drafted' : '⏳ Pending'}</span>
+              <span className="member-status">
+                {m.ready ? '✅ Ready' : '⏳ Not Ready'}
+                {m.draft_completed ? ' • ✅ Drafted' : ''}
+              </span>
               {m.profile_id === league.owner_id && <span className="owner-badge">Owner</span>}
+              {m.profile_id === user?.id && !m.ready && league.status === 'draft' && (
+                <button onClick={handleToggleReady} className="btn-small" style={{ marginLeft: 8 }}>Ready</button>
+              )}
+              {m.profile_id === user?.id && m.ready && league.status === 'draft' && (
+                <button onClick={handleToggleReady} className="btn-small" style={{ marginLeft: 8 }}>Not Ready</button>
+              )}
             </li>
           ))}
         </ul>
@@ -114,7 +135,9 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
         )}
 
         {isOwner && league.status === 'draft' && (
-          <button onClick={handleStartDraft} className="btn-primary">Start Draft</button>
+          <button onClick={handleStartDraft} className="btn-primary" disabled={!allReady}>
+            {allReady ? 'Start Draft' : `Waiting for ready (${members.filter(m => m.ready).length}/${members.length})`}
+          </button>
         )}
 
         {currentMember && league.status === 'drafting' && !currentMember.draft_completed && (

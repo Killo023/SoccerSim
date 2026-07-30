@@ -42,6 +42,7 @@ export async function createLeague(
     profile_id: ownerId,
     team_name: `${name} FC`,
     team_color: '#3498db',
+    ready: true,
   })
 
   return league
