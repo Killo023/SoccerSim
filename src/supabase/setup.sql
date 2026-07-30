@@ -95,6 +95,7 @@ DECLARE
   member_count INT;
   existing_id UUID;
 BEGIN
+  IF user_id <> auth.uid() THEN RETURN json_build_object('error', 'Not authorized'); END IF;
   SELECT * INTO target_league FROM public.leagues WHERE leagues.invite_code = join_league_by_code.invite_code;
   IF NOT FOUND THEN RETURN json_build_object('error', 'Invalid invite code'); END IF;
   IF target_league.status NOT IN ('draft', 'drafting') THEN RETURN json_build_object('error', 'League is no longer accepting new players'); END IF;
@@ -139,7 +140,8 @@ DO $$ BEGIN
 
   DROP POLICY IF EXISTS "Users can join leagues" ON league_members;
   CREATE POLICY "Users can join leagues" ON league_members FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND status IN ('draft', 'drafting'))
+    profile_id = auth.uid()
+    AND EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND status IN ('draft', 'drafting'))
   );
 
   DROP POLICY IF EXISTS "Members can update their own membership" ON league_members;

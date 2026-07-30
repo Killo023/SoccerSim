@@ -16,15 +16,19 @@ export function JoinLeaguePage({ inviteCode }: { inviteCode: string }) {
     setLookupFailed(false)
     setError('')
     getLeagueByInviteCode(inviteCode).then(l => {
-      if (!l) setLookupFailed(true)
+      if (!l) {
+        console.warn('[JoinLeague] No league found for code:', inviteCode, '— user:', user?.id || 'anon')
+        setLookupFailed(true)
+      }
       setLeague(l)
       setLoading(false)
     }).catch((err: Error) => {
+      console.error('[JoinLeague] lookup error:', err)
       setError('Failed to look up league: ' + (err.message || 'unknown error'))
       setLoading(false)
       setLookupFailed(true)
     })
-  }, [inviteCode])
+  }, [inviteCode, user?.id])
 
   async function handleJoin() {
     if (!user || !league) return

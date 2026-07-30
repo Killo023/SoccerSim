@@ -82,12 +82,14 @@ export async function joinLeague(inviteCode: string, profileId: string): Promise
 }
 
 export async function getLeague(leagueId: string): Promise<League | null> {
-  const { data } = await supabase.from('leagues').select('*').eq('id', leagueId).single()
+  const { data, error } = await supabase.from('leagues').select('*').eq('id', leagueId).maybeSingle()
+  if (error) throw error
   return data as League | null
 }
 
 export async function getLeagueByInviteCode(code: string): Promise<League | null> {
-  const { data } = await supabase.from('leagues').select('*').eq('invite_code', code).maybeSingle()
+  const { data, error } = await supabase.from('leagues').select('*').eq('invite_code', code).maybeSingle()
+  if (error) throw error
   return data as League | null
 }
 
