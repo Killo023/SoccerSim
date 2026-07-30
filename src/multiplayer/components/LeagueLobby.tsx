@@ -4,6 +4,7 @@ import { getLeague, getLeagueMembers, updateMemberTeam, updateLeagueStatus } fro
 import { allDraftsComplete } from '../api/draft'
 import { InviteLink } from './InviteLink'
 import { supabase } from '../../supabase/client'
+import { LEAGUES } from '../../league/data/clubs'
 import type { League, LeagueMember } from '../../supabase/types'
 
 export function LeagueLobby({ leagueId }: { leagueId: string }) {
@@ -91,7 +92,7 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
     <div className="auth-page">
       <div className="auth-card league-lobby">
         <h1>{league.name}</h1>
-        <p className="league-type">{league.league_type} • {league.status}</p>
+        <p className="league-type">{LEAGUES.find(l => l.id === league.league_type)?.name ?? league.league_type} • {league.status}</p>
 
         <InviteLink inviteCode={league.invite_code} />
 

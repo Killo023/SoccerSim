@@ -2,14 +2,9 @@ import { useState } from 'react'
 import { useAuth } from '../../auth/context/useAuth'
 import { createLeague } from '../api/leagues'
 
-const LEAGUE_TYPES = [
-  { value: 'EPL', label: 'English Premier League' },
-  { value: 'LaLiga', label: 'La Liga' },
-  { value: 'UCL', label: 'UEFA Champions League' },
-  { value: 'Saudi', label: 'Saudi Pro League' },
-  { value: 'UAE', label: 'UAE Pro League' },
-  { value: 'Qatar', label: 'Qatar Stars League' },
-]
+import { LEAGUES } from '../../league/data/clubs'
+
+const LEAGUE_TYPES = LEAGUES.map(l => ({ value: l.id, label: l.name }))
 
 export function CreateLeaguePage() {
   const { user } = useAuth()

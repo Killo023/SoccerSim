@@ -7,7 +7,7 @@ import { fastSimulate } from '../../match/engine/FastSimulator'
 import { generateLLMMatch } from '../../match/engine/LLMSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
 import { LLMMatchView } from '../../match/components/LLMMatchView'
-import { LEAGUES } from '../../league/data/clubs'
+import { ALL_CLUBS, LEAGUES } from '../../league/data/clubs'
 import type { TeamData, TeamSide, Position } from '../../match/types'
 import type { League, LeagueMember, MatchRecord } from '../../supabase/types'
 import type { DraftPick } from '../../supabase/types'
@@ -120,12 +120,11 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     if (!l) { setLoading(false); return }
 
-    const leagueDef = LEAGUES.find(def => def.id === l.league_type)
     const usedNames = new Set(ht.map(t => t.teamName))
-    const bots = (leagueDef?.clubs || []).filter(c => !usedNames.has(c.name))
+    const bots = ALL_CLUBS.filter(c => !usedNames.has(c.name)).slice(0, 40)
     setBotClubs(bots)
 
-    if (existing.length === 0 && bots.length > 0) {
+    if (existing.length === 0 && bots.length >= 4) {
       const allTeamNames = [...ht.map(t => t.teamName), ...bots.map(b => b.name)]
       const schedule = generateDoubleRoundRobin(allTeamNames)
       const fixtures: any[] = []
@@ -324,6 +323,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     setMatches(refreshedM)
   }
 
+  const leagueName = LEAGUES.find(l => l.id === league?.league_type)?.name ?? league?.name ?? 'Season'
   const botTeamNames = botClubs.map(c => c.name)
   const currentWeek = league?.current_week || 1
   const totalWeeks = matches.length > 0 ? Math.max(...matches.map(m => m.week_number)) : 38
@@ -370,7 +370,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   return (
     <div className="online-league-page">
       <div className="ol-header">
-        <h1>{league.name}</h1>
+        <h1>{leagueName}</h1>
         <span className="ol-season-badge">Season 1</span>
       </div>
 
