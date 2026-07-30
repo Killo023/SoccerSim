@@ -12,7 +12,7 @@ const POSITION_LABELS: Record<string, string> = {
   CM: 'CM', CAM: 'CAM', LM: 'LM', RM: 'RM', LW: 'LW', RW: 'RW', ST: 'ST',
 }
 
-const DRAFT_TIMER_SECONDS = 300
+const DRAFT_TIMER_SECONDS = 60
 
 function formatOVR(attrs: { pace: number; shooting: number; passing: number; dribbling: number; defending: number; physical: number }): number {
   return Math.round((attrs.pace + attrs.shooting + attrs.passing + attrs.dribbling + attrs.defending + attrs.physical) / 6)
@@ -249,7 +249,7 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
           <span className="mp-creator-name">Draft</span>
         </div>
         <div className="mp-timer">
-          <span className={`mp-timer-value ${countdown <= 60 ? 'urgent' : ''}`}>
+          <span className={`mp-timer-value ${countdown <= 15 ? 'urgent' : ''}`}>
             {minutes}:{seconds.toString().padStart(2, '0')}
           </span>
         </div>
