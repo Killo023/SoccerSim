@@ -479,7 +479,9 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         }
 
         const results = await simulateWeek(weekMatches)
-        await advanceLeagueWeek(leagueId, currentWeek)
+        // Don't pass expectedWeek — DB current_week can be 0 while
+        // the loop's currentWeek is 1+, causing the guard to fail.
+        await advanceLeagueWeek(leagueId)
 
         const updatedMatches = matchesRef.current.map(m => {
           const r = results.find(x => x.id === m.id)
@@ -646,8 +648,11 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     setPhysicsMatch(null)
 
-    // --- Advance the week using optimistic locking (expectedWeek) ---
-    await advanceLeagueWeek(leagueId, currentWeek)
+    // --- Advance the week ---
+    // NOT passing expectedWeek because the DB current_week starts at 0
+    // while the week number starts at 1, which would cause the optimistic
+    // lock check to always fail for the first week.
+    await advanceLeagueWeek(leagueId)
 
     // --- Refresh everything from DB ---
     const [refreshedM, refreshedL] = await Promise.all([
@@ -693,7 +698,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         const hasHumanMatch = weekMatches.some(m => m.home_member_id && m.away_member_id)
         if (hasHumanMatch) break
         const results = await simulateWeek(weekMatches)
-        await advanceLeagueWeek(leagueId, w)
+        await advanceLeagueWeek(leagueId)
 
         const updatedMatches = matchesRef.current.map(m => {
           const r = results.find(x => x.id === m.id)
