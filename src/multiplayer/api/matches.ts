@@ -10,7 +10,7 @@ export async function saveMatchResult(match: Omit<MatchRecord, 'id' | 'played_at
   if (error) throw error
 }
 
-export async function updateMatchResult(id: string, updates: Partial<Omit<MatchRecord, 'id' | 'created_at'>>): Promise<void> {
+export async function updateMatchResult(id: string, updates: Partial<Omit<MatchRecord, 'id' | 'created_at'>>): Promise<boolean> {
   const { error } = await supabase.rpc('update_match_result', {
     p_match_id: id,
     p_home_goals: updates.home_goals ?? 0,
@@ -25,9 +25,31 @@ export async function updateMatchResult(id: string, updates: Partial<Omit<MatchR
   })
   if (error) {
     console.warn('update_match_result RPC failed, falling back to direct update:', error.message)
-    const { error: directError } = await supabase.from('matches').update(updates).eq('id', id)
-    if (directError) console.error('Direct match update also failed:', directError.message)
+    const { data, error: directError } = await supabase
+      .from('matches')
+      .update(updates)
+      .eq('id', id)
+      .eq('status', 'pending')
+      .select('id')
+    if (directError) {
+      console.error('Direct match update also failed:', directError.message)
+      return false
+    }
+    return (data ?? []).length > 0
   }
+  return true
+}
+
+export async function claimMatch(matchId: string, userId?: string): Promise<boolean> {
+  const updates: any = { status: 'playing' }
+  if (userId) updates.playing_member_id = userId
+  const { data } = await supabase
+    .from('matches')
+    .update(updates)
+    .eq('id', matchId)
+    .eq('status', 'pending')
+    .select('id')
+  return (data ?? []).length > 0
 }
 
 export async function getLeagueMatches(leagueId: string): Promise<MatchRecord[]> {
@@ -56,14 +78,19 @@ export async function getWeekMatches(leagueId: string, week: number): Promise<Ma
   return (data ?? []) as MatchRecord[]
 }
 
-export async function advanceLeagueWeek(leagueId: string): Promise<void> {
+export async function advanceLeagueWeek(leagueId: string, expectedWeek?: number): Promise<void> {
+  if (expectedWeek !== undefined) {
+    const { data: league } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
+    const current = league ? ((league as any).current_week ?? 0) : 0
+    if (current !== expectedWeek) return
+  }
   const { error } = await supabase.rpc('advance_league_week', { p_league_id: leagueId })
   if (error) {
     console.warn('advance_league_week RPC failed, falling back:', error.message)
     const { data: league, error: selErr } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
     if (selErr) { console.error('Cannot read league for fallback:', selErr.message); return }
     const current = league ? ((league as any).current_week ?? 0) : 0
-    const { error: updErr } = await supabase.from('leagues').update({ current_week: current + 1 }).eq('id', leagueId)
-    if (updErr) console.error('Fallback league update failed (RLS?), need to run setup.sql for advance_league_week RPC:', updErr.message)
+    const { error: updErr } = await supabase.from('leagues').update({ current_week: current + 1 }).eq('id', leagueId).eq('current_week', current)
+    if (updErr) console.error('Fallback league advance failed:', updErr.message)
   }
 }

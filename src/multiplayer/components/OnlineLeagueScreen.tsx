@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { getLeague, getLeagueMembers, updateLeagueStatus } from '../api/leagues'
 import { getDraftPicks } from '../api/draft'
-import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
+import { getLeagueMatches, updateMatchResult, advanceLeagueWeek, claimMatch } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
 import { MatchView } from '../../match/components/MatchView'
@@ -249,6 +249,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   const leagueRef = useRef<League | null>(null)
   const matchesRef = useRef<MatchRecord[]>([])
   const runningRef = useRef(false)
+  const playingRef = useRef(false)
 
   const [physicsMatch, setPhysicsMatch] = useState<{
     homeTeam: TeamData; awayTeam: TeamData
@@ -345,6 +346,24 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     }
   }, [loading])
 
+  useEffect(() => {
+    if (loading || !league) return
+    const interval = setInterval(async () => {
+      if (runningRef.current) return
+      const [freshMatches, freshLeague] = await Promise.all([
+        getLeagueMatches(leagueId),
+        getLeague(leagueId),
+      ])
+      matchesRef.current = freshMatches
+      setMatches(freshMatches)
+      if (freshLeague) {
+        leagueRef.current = freshLeague
+        setLeague(freshLeague)
+      }
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [loading, league])
+
   const simulateWeek = useCallback(async (weekMatches: MatchRecord[]): Promise<MatchRecord[]> => {
     const clubs = botClubsRef.current
     const humans = humanTeamsRef.current
@@ -352,6 +371,12 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     for (const match of weekMatches) {
       try {
+        const { data: dbMatch } = await supabase.from('matches').select('status,home_goals,away_goals,home_shots,away_shots,home_shots_on_target,away_shots_on_target,home_possession').eq('id', match.id).maybeSingle()
+        if (dbMatch && dbMatch.status === 'finished') {
+          updated.push({ ...match, ...dbMatch, status: 'finished' })
+          continue
+        }
+
         let homeData: TeamData, awayData: TeamData
 
         if (match.home_member_id) {
@@ -424,9 +449,12 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           continue
         }
 
-        const hasHumanMatch = weekMatches.some(m => m.home_member_id && m.away_member_id)
-        if (hasHumanMatch) {
-          break
+        const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
+        if (humanMatch) {
+          const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
+          if (!dbM || dbM.status !== 'finished') {
+            break
+          }
         }
 
         const results = await simulateWeek(weekMatches)
@@ -471,6 +499,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   }, [leagueId, simulateWeek])
 
   async function handlePlayMatch() {
+    if (playingRef.current) return
     const l = leagueRef.current
     if (!l) return
 
@@ -478,6 +507,12 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const pending = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
     const humanMatch = pending.find(m => m.home_member_id && m.away_member_id)
     if (!humanMatch) return
+
+    const claimed = await claimMatch(humanMatch.id)
+    if (!claimed) {
+      setError('Match is already being played by another player.')
+      return
+    }
 
     const humans = humanTeamsRef.current
     const ht = humans.find(t => t.memberId === humanMatch.home_member_id)
@@ -487,6 +522,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
     const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
 
+    playingRef.current = true
     setPhysicsMatch({
       homeTeam, awayTeam,
       matchId: humanMatch.id,
@@ -497,6 +533,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
   async function handlePhysicsFinish(result: { homeGoals: number; awayGoals: number; homeShots: number; awayShots: number; homeShotsOnTarget: number; awayShotsOnTarget: number; homePossession: number }) {
     if (!physicsMatch) return
+    playingRef.current = false
 
     await updateMatchResult(physicsMatch.matchId, {
       home_goals: result.homeGoals,
