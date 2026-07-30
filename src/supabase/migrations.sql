@@ -140,9 +140,10 @@ CREATE POLICY "Owners can update their leagues" ON leagues
   FOR UPDATE USING (auth.uid() = owner_id);
 
 -- League members
-CREATE POLICY "League members can view members" ON league_members
+CREATE POLICY "Members can view their own memberships" ON league_members
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM league_members lm WHERE lm.league_id = league_id AND lm.profile_id = auth.uid())
+    profile_id = auth.uid() OR
+    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND owner_id = auth.uid())
   );
 
 CREATE POLICY "Users can join leagues" ON league_members

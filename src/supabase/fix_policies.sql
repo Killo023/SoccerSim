@@ -82,9 +82,10 @@ DO $$ BEGIN
   CREATE POLICY "Owners can update their leagues" ON leagues FOR UPDATE USING (auth.uid() = owner_id);
 
   -- League members
-  DROP POLICY IF EXISTS "League members can view members" ON league_members;
-  CREATE POLICY "League members can view members" ON league_members FOR SELECT USING (
-    EXISTS (SELECT 1 FROM league_members lm WHERE lm.league_id = league_id AND lm.profile_id = auth.uid())
+  DROP POLICY IF EXISTS "Members can view their own memberships" ON league_members;
+  CREATE POLICY "Members can view their own memberships" ON league_members FOR SELECT USING (
+    profile_id = auth.uid() OR
+    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND owner_id = auth.uid())
   );
 
   DROP POLICY IF EXISTS "Users can join leagues" ON league_members;
@@ -114,6 +115,6 @@ DO $$ BEGIN
 
   DROP POLICY IF EXISTS "Members can insert match results" ON matches;
   CREATE POLICY "Members can insert match results" ON matches FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM league_members WHERE id = matches.league_id AND profile_id = auth.uid())
+    EXISTS (SELECT 1 FROM league_members WHERE league_id = matches.league_id AND profile_id = auth.uid())
   );
 END $$;
