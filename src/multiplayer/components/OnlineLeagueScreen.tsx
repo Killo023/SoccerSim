@@ -11,6 +11,7 @@ import { MatchEngine } from '../../match/engine/MatchEngine'
 import { MatchRenderer } from '../../match/renderer/MatchRenderer'
 import { ALL_CLUBS, LEAGUES } from '../../league/data/clubs'
 import type { TeamData, TeamSide, Position, MatchState } from '../../match/types'
+import { setMatchSeed, seedFromString } from '../../match/rng'
 import type { League, MatchRecord } from '../../supabase/types'
 import type { DraftPick } from '../../supabase/types'
 import type { Club } from '../../league/types'
@@ -94,6 +95,8 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
     if (!canvas) return
     const renderer = new MatchRenderer(canvas)
 
+    const seed = seedFromString(homeTeam.id + awayTeam.id + homeTeam.name + awayTeam.name)
+    setMatchSeed(seed)
     const engine = new MatchEngine({
       homeTeam,
       awayTeam,
@@ -407,6 +410,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           awayData = clubToTeamData(club, 'away')
         }
 
+        setMatchSeed(seedFromString(homeData.id + awayData.id + homeData.name + awayData.name))
         const result = fastSimulate(homeData, awayData)
         await updateMatchResult(match.id, {
           home_goals: result.homeGoals,

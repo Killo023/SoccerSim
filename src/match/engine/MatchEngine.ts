@@ -5,6 +5,7 @@ import {
 } from '../constants'
 import { updateBallPosition, distance, kickBall } from './BallPhysics'
 import { runPlayerAI, movePlayer, processTouches, getPlayerSpeed, getFormationPos } from './PlayerAI'
+import { rng } from '../rng'
 import { checkGoal, checkShot, resetBallAfterGoal, resetBallAfterOutOfPlay } from './MatchEvents'
 
 interface MatchConfig {
@@ -336,7 +337,7 @@ export class MatchEngine {
     if (!player) return
     const goalY = player.team === 'home' ? 0 : PITCH_LENGTH
     const err = (1 - player.attrs.shooting / 100) * 5
-    kickBall(this.state.ball, player, { x: PITCH_WIDTH / 2 + (Math.random() - 0.5) * err, y: goalY + (Math.random() - 0.5) * 3 }, 28)
+    kickBall(this.state.ball, player, { x: PITCH_WIDTH / 2 + (rng() - 0.5) * err, y: goalY + (rng() - 0.5) * 3 }, 28)
     player.hasBall = false
     const evt = checkShot(this.state.ball, player, this.state.clock, this.state.stats)
     this.state.events.push(evt)

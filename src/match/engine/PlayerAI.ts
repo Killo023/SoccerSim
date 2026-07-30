@@ -5,6 +5,7 @@ import {
 } from '../constants'
 import { distance, isInPenaltyArea, kickBall } from './BallPhysics'
 import { checkShot } from './MatchEvents'
+import { rng } from '../rng'
 
 export function getPlayerSpeed(p: Player): number {
   return p.position === 'GK' ? KEEPER_SPEED : PLAYER_SPEED * (0.7 + 0.3 * p.attrs.pace / 100)
@@ -62,8 +63,8 @@ export function runPlayerAI(
     const sortedByDist = [...teamPlayers].sort((a, b) => distance(a, ball) - distance(b, ball))
     const idx = sortedByDist.indexOf(player)
     if (idx < 2) {
-      player.targetX = ball.x + (Math.random() - 0.5) * 2
-      player.targetY = ball.y + (Math.random() - 0.5) * 2
+      player.targetX = ball.x + (rng() - 0.5) * 2
+      player.targetY = ball.y + (rng() - 0.5) * 2
       return
     }
   }
@@ -76,9 +77,9 @@ export function runPlayerAI(
       if (target && !underPressure) {
         const lead = leadPosition(target)
         const err = (1 - player.attrs.passing / 100) * 4
-        kickBall(ball, player, { x: lead.x + (Math.random() - 0.5) * err, y: lead.y + (Math.random() - 0.5) * err }, 30)
+        kickBall(ball, player, { x: lead.x + (rng() - 0.5) * err, y: lead.y + (rng() - 0.5) * err }, 30)
       } else {
-        const clearX = PITCH_WIDTH / 2 + (Math.random() - 0.5) * 20
+        const clearX = PITCH_WIDTH / 2 + (rng() - 0.5) * 20
         const clearY = side === 'home' ? PITCH_LENGTH * 0.3 : PITCH_LENGTH * 0.7
         kickBall(ball, player, { x: clearX, y: clearY }, 35)
       }
@@ -104,27 +105,27 @@ export function runPlayerAI(
       if (dGoal < SHOOT_DISTANCE_MAX && inBox) {
         const errX = (1 - (player.attrs.shooting + player.attrs.dribbling) / 200) * 4
         const errY = (1 - (player.attrs.shooting + player.attrs.dribbling) / 200) * 2
-        kickBall(ball, player, { x: oppGoal.x + (Math.random() - 0.5) * errX, y: oppGoal.y + (Math.random() - 0.5) * errY }, 28)
+        kickBall(ball, player, { x: oppGoal.x + (rng() - 0.5) * errX, y: oppGoal.y + (rng() - 0.5) * errY }, 28)
         player.hasBall = false; player.targetX = oppGoal.x; player.targetY = oppGoal.y
         events.push(checkShot(ball, player, clock, stats))
         return
       }
 
-      if (dGoal < SHOOT_DISTANCE_MAX * 2 && !inBox && !isGK && Math.random() < 0.30) {
+      if (dGoal < SHOOT_DISTANCE_MAX * 2 && !inBox && !isGK && rng() < 0.30) {
         const errX = (1 - player.attrs.shooting / 100) * 8
         const errY = (1 - player.attrs.shooting / 100) * 4
-        kickBall(ball, player, { x: oppGoal.x + (Math.random() - 0.5) * errX, y: oppGoal.y + (Math.random() - 0.5) * errY }, 26)
+        kickBall(ball, player, { x: oppGoal.x + (rng() - 0.5) * errX, y: oppGoal.y + (rng() - 0.5) * errY }, 26)
         player.hasBall = false
         events.push(checkShot(ball, player, clock, stats))
         return
       }
 
       const passTarget = findOpenTeammate(player, teamPlayers, ball, oppGoal, oppPlayers, side)
-      if (passTarget && Math.random() < 0.50 + (player.attrs.passing / 100) * 0.35) {
+      if (passTarget && rng() < 0.50 + (player.attrs.passing / 100) * 0.35) {
         const lead = leadPosition(passTarget)
         const err = (1 - player.attrs.passing / 100) * 3
         const power = dGoal < SHOOT_DISTANCE_MAX * 1.5 ? 30 : 38
-        kickBall(ball, player, { x: lead.x + (Math.random() - 0.5) * err, y: lead.y + (Math.random() - 0.5) * err }, power)
+        kickBall(ball, player, { x: lead.x + (rng() - 0.5) * err, y: lead.y + (rng() - 0.5) * err }, power)
         player.hasBall = false; return
       }
 
@@ -162,7 +163,7 @@ function doAttack(
   const dir = isHome ? -1 : 1
 
   const lateralShift = (ball.x - PITCH_WIDTH / 2) * 0.2
-  const tx = Math.max(5, Math.min(PITCH_WIDTH - 5, formPos.x + lateralShift + (Math.random() - 0.5) * 2))
+  const tx = Math.max(5, Math.min(PITCH_WIDTH - 5, formPos.x + lateralShift + (rng() - 0.5) * 2))
   let ty: number
 
   if (isAttacker || isWide) {
@@ -230,13 +231,13 @@ function doDefend(
   if (carrier) {
     const dx = carrier.x - ball.x; const dy = carrier.y - ball.y
     const d = Math.max(Math.hypot(dx, dy), 0.01)
-    player.targetX = Math.max(3, Math.min(PITCH_WIDTH - 3, ball.x + (dx / d) * 2 + (Math.random() - 0.5) * 1))
-    player.targetY = Math.max(3, Math.min(PITCH_LENGTH - 3, ball.y + (dy / d) * 2 + (Math.random() - 0.5) * 1))
+    player.targetX = Math.max(3, Math.min(PITCH_WIDTH - 3, ball.x + (dx / d) * 2 + (rng() - 0.5) * 1))
+    player.targetY = Math.max(3, Math.min(PITCH_LENGTH - 3, ball.y + (dy / d) * 2 + (rng() - 0.5) * 1))
     return
   }
 
   const lateralShift = (ball.x - PITCH_WIDTH / 2) * 0.2
-  const tx = Math.max(3, Math.min(PITCH_WIDTH - 3, formPos.x + lateralShift + (Math.random() - 0.5) * 1))
+  const tx = Math.max(3, Math.min(PITCH_WIDTH - 3, formPos.x + lateralShift + (rng() - 0.5) * 1))
   let ty: number
 
   if (isDefender) {
@@ -244,7 +245,7 @@ function doDefend(
       ? Math.max(55, Math.min(90, ball.y * 0.5 + 50))
       : Math.max(15, Math.min(50, ball.y * 0.5))
     const baseY = formPos.y + (ownGoal.y - formPos.y) * 0.15
-    ty = (isHome ? Math.min(baseY, lineY) : Math.max(baseY, lineY)) + (Math.random() - 0.5) * 1
+    ty = (isHome ? Math.min(baseY, lineY) : Math.max(baseY, lineY)) + (rng() - 0.5) * 1
   } else if (isMidfielder) {
     ty = formPos.y + (isHome ? -2 : 2) + ballDir.y * 2
   } else {
@@ -337,7 +338,7 @@ export function processTouches(players: Player[], ball: Ball) {
         if (prev && prev.team !== player.team && distance(player, ball) < 2) {
           prev.hasBall = false
           ball.lastTouchedBy = player.id; ball.lastTouchedTeam = player.team
-          const angle = Math.atan2(ball.y - player.y, ball.x - player.x) + (Math.random() - 0.5) * 2
+          const angle = Math.atan2(ball.y - player.y, ball.x - player.x) + (rng() - 0.5) * 2
           ball.vx = Math.cos(angle) * 4; ball.vy = Math.sin(angle) * 4
           return
         }

@@ -4,6 +4,7 @@ import { PITCH_WIDTH, PITCH_LENGTH, GOAL_WIDTH, PHYSICS_DT, AI_THINK_INTERVAL, M
 import { updateBallPosition, distance, kickBall, isInPenaltyArea } from './BallPhysics'
 import { runPlayerAI, movePlayer, processTouches } from './PlayerAI'
 import { resetBallAfterGoal, resetBallAfterOutOfPlay, checkShot } from './MatchEvents'
+import { rng } from '../rng'
 
 function createSimState(homeTeam: TeamData, awayTeam: TeamData): MatchState {
   const homePlayers = homeTeam.players.map(p => ({ ...p, x: 0, y: 0, targetX: 0, targetY: 0, hasBall: false, isControlled: false, _dx: 0, _dy: 0, _vx: 0, _vy: 0 }))
@@ -65,8 +66,8 @@ export function fastSimulate(homeTeam: TeamData, awayTeam: TeamData): FixtureRes
       const goalY = carrier.team === 'home' ? 0 : PITCH_LENGTH
       const goal = { x: PITCH_WIDTH / 2, y: goalY }
       const dGoal = distance(carrier, goal)
-      if (dGoal < 30 && isInPenaltyArea(carrier, carrier.team === 'home') && Math.random() < 0.15) {
-        kickBall(state.ball, state.ball, { x: goal.x + (Math.random() - 0.5) * 3, y: goal.y + (Math.random() - 0.5) * 2 }, 26)
+      if (dGoal < 30 && isInPenaltyArea(carrier, carrier.team === 'home') && rng() < 0.15) {
+        kickBall(state.ball, state.ball, { x: goal.x + (rng() - 0.5) * 3, y: goal.y + (rng() - 0.5) * 2 }, 26)
         carrier.hasBall = false
         checkShot(state.ball, carrier, state.clock, state.stats)
       } else {
