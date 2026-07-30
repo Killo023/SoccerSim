@@ -2,11 +2,12 @@ import { supabase } from '../../supabase/client'
 import type { DraftPick } from '../../supabase/types'
 
 export async function saveDraftPicks(leagueId: string, memberId: string, picks: Omit<DraftPick, 'id' | 'created_at'>[]): Promise<void> {
-  await supabase.from('draft_picks').delete().eq('league_id', leagueId).eq('member_id', memberId)
-  if (picks.length > 0) {
-    const { error } = await supabase.from('draft_picks').insert(picks)
-    if (error) throw error
-  }
+  const { error } = await supabase.rpc('save_draft_picks', {
+    p_league_id: leagueId,
+    p_member_id: memberId,
+    p_picks: JSON.parse(JSON.stringify(picks)),
+  })
+  if (error) throw error
 }
 
 export async function getDraftPicks(leagueId: string): Promise<DraftPick[]> {
@@ -30,14 +31,12 @@ export async function getMemberDraftPicks(memberId: string): Promise<DraftPick[]
 }
 
 export async function markDraftComplete(memberId: string): Promise<void> {
-  await supabase.from('league_members').update({ draft_completed: true }).eq('id', memberId)
+  const { error } = await supabase.rpc('mark_draft_complete', { p_member_id: memberId })
+  if (error) throw error
 }
 
 export async function allDraftsComplete(leagueId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from('league_members')
-    .select('draft_completed')
-    .eq('league_id', leagueId)
-  if (!data || data.length === 0) return false
-  return (data as any[]).every(d => d.draft_completed)
+  const { data, error } = await supabase.rpc('all_drafts_complete', { p_league_id: leagueId })
+  if (error) throw error
+  return data ?? false
 }

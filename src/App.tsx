@@ -8,6 +8,7 @@ import { SignupPage } from './auth/components/SignupPage'
 import { CreateLeaguePage } from './multiplayer/components/CreateLeaguePage'
 import { JoinLeaguePage } from './multiplayer/components/JoinLeaguePage'
 import { LeagueLobby } from './multiplayer/components/LeagueLobby'
+import { OnlineDraftScreen } from './multiplayer/components/OnlineDraftScreen'
 import { useHashRoute } from './router'
 import { useLeagueStore } from './store/leagueStore'
 import { MainMenu } from './league/components/MainMenu'
@@ -72,7 +73,7 @@ function AppContent() {
     case 'league':
       return <ProtectedRoute><LeagueLobby leagueId={route.params.id} /></ProtectedRoute>
     case 'draft':
-      return <ProtectedRoute>{(user) ? <TeamCreationScreen /> : null}</ProtectedRoute>
+      return <ProtectedRoute><OnlineDraftScreen leagueId={route.params.id} /></ProtectedRoute>
     case 'online-league':
       return <ProtectedRoute><OnlineLeagueScreen leagueId={route.params.id} /></ProtectedRoute>
   }

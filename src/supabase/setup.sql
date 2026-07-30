@@ -132,6 +132,50 @@ BEGIN
 END;
 $$;
 
+-- Save draft picks (replace all picks for a member in one transaction)
+CREATE OR REPLACE FUNCTION save_draft_picks(p_league_id UUID, p_member_id UUID, p_picks JSONB)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM public.draft_picks WHERE league_id = p_league_id AND member_id = p_member_id;
+  IF jsonb_array_length(p_picks) > 0 THEN
+    INSERT INTO public.draft_picks (league_id, member_id, player_name, player_club, position, attributes, pick_round, pick_order)
+    SELECT
+      p_league_id,
+      p_member_id,
+      (item->>'player_name')::TEXT,
+      COALESCE((item->>'player_club')::TEXT, ''),
+      COALESCE((item->>'position')::TEXT, ''),
+      COALESCE((item->'attributes')::JSONB, '{}'::JSONB),
+      COALESCE((item->>'pick_round')::INTEGER, 0),
+      COALESCE((item->>'pick_order')::INTEGER, 0)
+    FROM jsonb_array_elements(p_picks) AS item;
+  END IF;
+END;
+$$;
+
+-- Mark draft complete for a member
+CREATE OR REPLACE FUNCTION mark_draft_complete(p_member_id UUID)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.league_members SET draft_completed = true WHERE id = p_member_id;
+$$;
+
+-- Check if all members have completed drafts
+CREATE OR REPLACE FUNCTION all_drafts_complete(p_league_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT COUNT(*) > 0 AND bool_and(draft_completed)
+  FROM public.league_members WHERE league_id = p_league_id;
+$$;
+
 -- 4. RLS POLICIES (drop + recreate)
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Profiles are public" ON profiles;
@@ -176,11 +220,6 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "League members can view draft picks" ON draft_picks;
   CREATE POLICY "League members can view draft picks" ON draft_picks FOR SELECT USING (
     is_league_member(league_id, auth.uid())
-  );
-
-  DROP POLICY IF EXISTS "Members can insert their own draft picks" ON draft_picks;
-  CREATE POLICY "Members can insert their own draft picks" ON draft_picks FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM league_members WHERE id = member_id AND profile_id = auth.uid())
   );
 
   DROP POLICY IF EXISTS "League members can view matches" ON matches;
