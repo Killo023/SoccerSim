@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { getLeague, getLeagueMembers } from '../api/leagues'
+import { getLeague, getLeagueMembers, updateLeagueStatus } from '../api/leagues'
 import { getDraftPicks } from '../api/draft'
 import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
@@ -155,6 +155,85 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
       <MatchControls />
     </div>
   )
+}
+
+function ordinal(n: number): string {
+  if (n === 1) return '1st'
+  if (n === 2) return '2nd'
+  if (n === 3) return '3rd'
+  return n + 'th'
+}
+
+function SeasonResults({ standings, leagueName }: { standings: ReturnType<typeof computeStandings>; leagueName: string }) {
+  const sorted = [...standings].sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+  const [revealed, setRevealed] = useState(0)
+
+  useEffect(() => {
+    if (revealed >= sorted.length) return
+    const t = setTimeout(() => setRevealed(r => r + 1), 220)
+    return () => clearTimeout(t)
+  }, [revealed, sorted.length])
+
+  return (
+    <div className="ol-results-page">
+      <div className="ol-results-header">
+        <h1>{leagueName}</h1>
+        <span className="ol-season-badge">Season Complete</span>
+      </div>
+
+      <div className="ol-results-trophy">
+        <span className="ol-trophy-icon">🏆</span>
+        <h2>Champions</h2>
+        {revealed >= sorted.length && (
+          <div className="ol-champion-reveal">
+            <span className="ol-champion-name">{sorted[0].name}</span>
+            <span className="ol-champion-pts">{sorted[0].pts} pts</span>
+          </div>
+        )}
+      </div>
+
+      <div className="ol-results-list-container">
+        {sorted.map((s, i) => {
+          const pos = sorted.length - i
+          return (
+            <div
+              key={s.name}
+              className={`ol-result-entry ${pos === 1 ? 'ol-entry-champion' : ''} ${pos <= 3 ? 'ol-entry-podium' : ''} ${s.isHuman ? 'ol-entry-human' : ''}`}
+              style={{
+                animationDelay: `${i * 0.22}s`,
+                opacity: revealed > i ? 1 : 0,
+                transform: revealed > i ? 'translateY(0)' : 'translateY(30px)',
+                transition: 'opacity 0.5s ease, transform 0.5s ease',
+              }}
+            >
+              <span className="ol-entry-pos">{ordinal(pos)}</span>
+              <span className="ol-entry-dot" style={{ backgroundColor: s.color }} />
+              <span className="ol-entry-name">{s.name}</span>
+              {s.isHuman && <span className="ol-team-badge">YOU</span>}
+              <span className="ol-entry-pts"><strong>{s.pts}</strong> pts</span>
+              <span className="ol-entry-record">{s.wins}W {s.draws}D {s.losses}L</span>
+              <span className="ol-entry-gd">{s.gd > 0 ? '+' : ''}{s.gd}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function computeStandings(allTeams: { name: string; color: string; isHuman: boolean }[], matches: MatchRecord[]) {
+  return allTeams.map(team => {
+    const teamMatches = matches.filter(m => (m.home_team_name === team.name || m.away_team_name === team.name) && m.status === 'finished')
+    const wins = teamMatches.filter(m => {
+      if (m.home_team_name === team.name) return m.home_goals > m.away_goals
+      return m.away_goals > m.home_goals
+    }).length
+    const draws = teamMatches.filter(m => m.home_goals === m.away_goals).length
+    const losses = teamMatches.length - wins - draws
+    const gf = teamMatches.reduce((sum, m) => sum + (m.home_team_name === team.name ? m.home_goals : m.away_goals), 0)
+    const ga = teamMatches.reduce((sum, m) => sum + (m.home_team_name === team.name ? m.away_goals : m.home_goals), 0)
+    return { ...team, played: teamMatches.length, wins, draws, losses, gf, ga, gd: gf - ga, pts: wins * 3 + draws }
+  }).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
 }
 
 export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
@@ -370,6 +449,14 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         leagueRef.current = refreshedL
         setLeague(refreshedL)
       }
+
+      const allFinished = matchesRef.current.every(m => m.status === 'finished')
+      if (allFinished && leagueRef.current?.status !== 'finished') {
+        await updateLeagueStatus(leagueId, 'finished')
+        const refreshedL2 = await getLeague(leagueId)
+        leagueRef.current = refreshedL2
+        setLeague(refreshedL2)
+      }
     } catch (err: any) {
       console.error('Auto-simulate error:', err)
       setError('Simulation error: ' + (err.message || 'Unknown error'))
@@ -432,6 +519,14 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const refreshedL = await getLeague(leagueId)
     leagueRef.current = refreshedL
     setLeague(refreshedL)
+
+    const allFin = refreshedM.every(m => m.status === 'finished')
+    if (allFin && refreshedL?.status !== 'finished') {
+      await updateLeagueStatus(leagueId, 'finished')
+      const rl2 = await getLeague(leagueId)
+      leagueRef.current = rl2
+      setLeague(rl2)
+    }
   }
 
   async function handleForceSimulate() {
@@ -467,6 +562,14 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       const refreshedL = await getLeague(leagueId)
       leagueRef.current = refreshedL
       setLeague(refreshedL)
+
+      const allFin = matchesRef.current.every(m => m.status === 'finished')
+      if (allFin && refreshedL?.status !== 'finished') {
+        await updateLeagueStatus(leagueId, 'finished')
+        const rl2 = await getLeague(leagueId)
+        leagueRef.current = rl2
+        setLeague(rl2)
+      }
     } catch (err: any) {
       console.error('Force simulate error:', err)
       setError(err.message || 'Simulation error')
@@ -496,21 +599,14 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     ...botClubs.map(c => ({ name: c.name, color: c.color, isHuman: false })),
   ]
 
-  const standings = allTeams.map(team => {
-    const teamMatches = matches.filter(m => (m.home_team_name === team.name || m.away_team_name === team.name) && m.status === 'finished')
-    const wins = teamMatches.filter(m => {
-      if (m.home_team_name === team.name) return m.home_goals > m.away_goals
-      return m.away_goals > m.home_goals
-    }).length
-    const draws = teamMatches.filter(m => m.home_goals === m.away_goals).length
-    const losses = teamMatches.length - wins - draws
-    const gf = teamMatches.reduce((sum, m) => sum + (m.home_team_name === team.name ? m.home_goals : m.away_goals), 0)
-    const ga = teamMatches.reduce((sum, m) => sum + (m.home_team_name === team.name ? m.away_goals : m.home_goals), 0)
-    return { ...team, played: teamMatches.length, wins, draws, losses, gf, ga, gd: gf - ga, pts: wins * 3 + draws }
-  }).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+  const standings = computeStandings(allTeams, matches)
 
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Building league schedule...</p></div>
   if (!league) return <div className="auth-page"><div className="auth-card"><p>League not found</p></div></div>
+
+  if (league.status === 'finished') {
+    return <SeasonResults standings={standings} leagueName={LEAGUES.find(l => l.id === league.league_type)?.name ?? league.name} />
+  }
 
   const progress = totalWeeks > 0 ? Math.round((currentWeek / totalWeeks) * 100) : 0
   const leagueName = LEAGUES.find(l => l.id === league.league_type)?.name ?? league.name

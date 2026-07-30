@@ -2238,6 +2238,136 @@ html, body, #app {
   margin-bottom: 20px;
 }
 
+/* Season Results */
+.ol-results-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+  min-height: 100vh;
+}
+
+.ol-results-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ol-results-header h1 {
+  font-size: 20px;
+  color: #fff;
+}
+
+.ol-results-trophy {
+  text-align: center;
+  padding: 32px 16px;
+  margin-bottom: 24px;
+  border: 1px solid #2a2a3e;
+  background: linear-gradient(180deg, #1a2a1e 0%, #1a1a2e 100%);
+}
+.ol-trophy-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 4px;
+}
+.ol-results-trophy h2 {
+  font-size: 13px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.ol-champion-reveal {
+  animation: fadeScaleIn 0.6s ease forwards;
+}
+.ol-champion-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffd700;
+  display: block;
+}
+.ol-champion-pts {
+  font-size: 16px;
+  color: #aaa;
+}
+
+.ol-results-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ol-result-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #151525;
+  border: 1px solid #1e1e30;
+  font-size: 13px;
+}
+.ol-entry-champion {
+  background: #1a2a1e;
+  border-color: #ffd700;
+  border-width: 2px;
+}
+.ol-entry-podium {
+  background: #1a222a;
+}
+.ol-entry-human {
+  border-color: #3498db;
+}
+.ol-entry-pos {
+  width: 32px;
+  font-weight: 700;
+  color: #888;
+  font-size: 14px;
+}
+.ol-entry-champion .ol-entry-pos {
+  color: #ffd700;
+  font-size: 16px;
+}
+.ol-entry-podium .ol-entry-pos {
+  color: #4fc3f7;
+}
+.ol-entry-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.ol-entry-name {
+  flex: 1;
+  font-weight: 500;
+  color: #ddd;
+}
+.ol-entry-champion .ol-entry-name {
+  color: #ffd700;
+  font-weight: 700;
+}
+.ol-entry-pts {
+  font-size: 14px;
+  color: #fff;
+  min-width: 40px;
+  text-align: right;
+}
+.ol-entry-record {
+  font-size: 11px;
+  color: #777;
+  min-width: 60px;
+  text-align: right;
+}
+.ol-entry-gd {
+  font-size: 12px;
+  color: #666;
+  min-width: 30px;
+  text-align: right;
+}
+
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 .ol-table {
   width: 100%;
   border-collapse: collapse;
