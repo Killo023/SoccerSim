@@ -53,7 +53,18 @@ ALTER TABLE IF EXISTS league_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS draft_picks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS matches ENABLE ROW LEVEL SECURITY;
 
--- 3. Drop and recreate all policies
+-- 3. Helper function that bypasses RLS to check league membership
+-- This breaks the circular dependency between leagues and league_members policies
+CREATE OR REPLACE FUNCTION is_league_member(league_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.league_members WHERE league_members.league_id = is_league_member.league_id AND profile_id = is_league_member.user_id);
+$$;
+
+-- 4. Drop and recreate all policies
 DO $$ BEGIN
   -- Profiles
   DROP POLICY IF EXISTS "Profiles are public" ON profiles;
@@ -70,9 +81,10 @@ DO $$ BEGIN
   CREATE POLICY "Anyone can look up leagues by invite code" ON leagues FOR SELECT USING (true);
 
   DROP POLICY IF EXISTS "League members can view their leagues" ON leagues;
+  -- Uses SECURITY DEFINER helper to avoid circular RLS
   CREATE POLICY "League members can view their leagues" ON leagues FOR SELECT USING (
     auth.uid() = owner_id OR
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = id AND profile_id = auth.uid())
+    is_league_member(id, auth.uid())
   );
 
   DROP POLICY IF EXISTS "Users can create leagues" ON leagues;
@@ -83,9 +95,10 @@ DO $$ BEGIN
 
   -- League members
   DROP POLICY IF EXISTS "Members can view their own memberships" ON league_members;
+  -- Uses SECURITY DEFINER helper so that being a member in a league lets you see all members of that league
   CREATE POLICY "Members can view their own memberships" ON league_members FOR SELECT USING (
     profile_id = auth.uid() OR
-    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND owner_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 
   DROP POLICY IF EXISTS "Users can join leagues" ON league_members;
@@ -99,7 +112,7 @@ DO $$ BEGIN
   -- Draft picks
   DROP POLICY IF EXISTS "League members can view draft picks" ON draft_picks;
   CREATE POLICY "League members can view draft picks" ON draft_picks FOR SELECT USING (
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = draft_picks.league_id AND profile_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 
   DROP POLICY IF EXISTS "Members can insert their own draft picks" ON draft_picks;
@@ -110,11 +123,11 @@ DO $$ BEGIN
   -- Matches
   DROP POLICY IF EXISTS "League members can view matches" ON matches;
   CREATE POLICY "League members can view matches" ON matches FOR SELECT USING (
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = matches.league_id AND profile_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 
   DROP POLICY IF EXISTS "Members can insert match results" ON matches;
   CREATE POLICY "Members can insert match results" ON matches FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = matches.league_id AND profile_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 END $$;

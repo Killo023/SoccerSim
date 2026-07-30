@@ -123,14 +123,25 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
--- Leagues (references league_members which now exists)
+-- Helper function that bypasses RLS to check league membership
+-- This breaks the circular dependency between leagues and league_members policies
+CREATE OR REPLACE FUNCTION is_league_member(league_id UUID, user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.league_members WHERE league_members.league_id = is_league_member.league_id AND profile_id = is_league_member.user_id);
+$$;
+
+-- Leagues
 CREATE POLICY "Anyone can look up leagues by invite code" ON leagues
   FOR SELECT USING (true);
 
 CREATE POLICY "League members can view their leagues" ON leagues
   FOR SELECT USING (
     auth.uid() = owner_id OR
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = id AND profile_id = auth.uid())
+    is_league_member(id, auth.uid())
   );
 
 CREATE POLICY "Users can create leagues" ON leagues
@@ -143,7 +154,7 @@ CREATE POLICY "Owners can update their leagues" ON leagues
 CREATE POLICY "Members can view their own memberships" ON league_members
   FOR SELECT USING (
     profile_id = auth.uid() OR
-    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND owner_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 
 CREATE POLICY "Users can join leagues" ON league_members
@@ -157,7 +168,7 @@ CREATE POLICY "Members can update their own membership" ON league_members
 -- Draft picks
 CREATE POLICY "League members can view draft picks" ON draft_picks
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = draft_picks.league_id AND profile_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 
 CREATE POLICY "Members can insert their own draft picks" ON draft_picks
@@ -168,10 +179,10 @@ CREATE POLICY "Members can insert their own draft picks" ON draft_picks
 -- Matches
 CREATE POLICY "League members can view matches" ON matches
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = matches.league_id AND profile_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
 
 CREATE POLICY "Members can insert match results" ON matches
   FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM league_members WHERE league_id = matches.league_id AND profile_id = auth.uid())
+    is_league_member(league_id, auth.uid())
   );
