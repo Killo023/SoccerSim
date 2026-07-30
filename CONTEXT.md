@@ -129,7 +129,7 @@ The engine should now produce realistic spread and continuous ball movement with
 - Match result is saved once and never overwritten by a second player
 - Speed controls (0.5x/1x/2x/4x) for the 2D match view
 - Manual refresh button and 2s polling for live data sync
-- League auto-advances weeks after match finishes
+- League auto-advances weeks after match finishes; auto-sim continues from current week (never resets to week 1)
 - 20 total teams per league (dynamic bot count based on human player count)
 - Bot teams filtered by league type (e.g., EPL bots for Premier League league)
 
@@ -166,6 +166,7 @@ The engine should now produce realistic spread and continuous ball movement with
 ### Online League
 - The `claim_match` RPC does not exist on the Supabase database; `handlePlayMatch` opens the 2D match directly without DB claiming. Result is saved when the match finishes. The second player to finish sees the match is already finished and does not overwrite.
 - Auto-sim race condition: both players' browsers independently run auto-sim. The `advanceLeagueWeek` call uses `expectedWeek` guard to prevent double-advancing, and the auto-sim re-syncs from DB when the week jumps ahead.
+- Auto-sim previously could restart from week 1 after a 2D match finishes. Fixed by always reading current_week from DB at the start of `runAutoSimulate` instead of relying on potentially stale local state.
 
 ### Other
 - (none reported)

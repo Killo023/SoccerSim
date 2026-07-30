@@ -450,109 +450,100 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     return updated
   }, [])
 
-  const runAutoSimulate = useCallback(async () => {
-    const l = leagueRef.current
-    if (!l || runningRef.current) return
-    runningRef.current = true
-    setSimulating(true)
-    setError(null)
+   const runAutoSimulate = useCallback(async () => {
+     if (runningRef.current) return
+     runningRef.current = true
+     setSimulating(true)
+     setError(null)
 
-    try {
-      let currentWeek = l.current_week || 1
-      let totalWeeks = matchesRef.current.length > 0 ? Math.max(...matchesRef.current.map(m => m.week_number)) : 38
-      let advanced = false
+     try {
+       const { data: dbLeague } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
+       const l = leagueRef.current
+       let currentWeek = dbLeague ? dbLeague.current_week : (l?.current_week || 1)
+       let totalWeeks = matchesRef.current.length > 0 ? Math.max(...matchesRef.current.map(m => m.week_number)) : 38
+       let advanced = false
 
-      while (currentWeek <= totalWeeks) {
-        const { data: dbLeague } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
-        if (dbLeague && dbLeague.current_week > currentWeek) {
-          currentWeek = dbLeague.current_week
-          const freshM = await getLeagueMatches(leagueId)
-          matchesRef.current = freshM
-          setMatches(freshM)
-          totalWeeks = freshM.length > 0 ? Math.max(...freshM.map(m => m.week_number)) : 38
-          continue
-        }
+       while (currentWeek <= totalWeeks) {
+         const weekMatches = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
+         if (weekMatches.length === 0) {
+           currentWeek++
+           continue
+         }
 
-        const weekMatches = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
-        if (weekMatches.length === 0) {
-          currentWeek++
-          continue
-        }
+         const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
+         if (humanMatch) {
+           const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
+           if (!dbM || dbM.status !== 'finished') {
+             setSimulating(false)
+             const [freshMembers, freshPicks] = await Promise.all([
+               getLeagueMembers(leagueId),
+               getDraftPicks(leagueId),
+             ])
+             const freshHumans = freshMembers.map(member => ({
+               memberId: member.id,
+               memberName: (member as any).profile?.display_name || '?',
+               teamName: member.team_name,
+               teamColor: member.team_color,
+               players: freshPicks.filter(p => p.member_id === member.id),
+             }))
+             humanTeamsRef.current = freshHumans
+             const ht = freshHumans.find(t => t.memberId === humanMatch.home_member_id)
+             const at = freshHumans.find(t => t.memberId === humanMatch.away_member_id)
+             if (ht && at && ht.players.length >= 11 && at.players.length >= 11) {
+               const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
+               const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
+               playingRef.current = true
+               setPhysicsMatch({
+                 homeTeam, awayTeam,
+                 matchId: humanMatch.id,
+                 homeMemberId: humanMatch.home_member_id!,
+                 awayMemberId: humanMatch.away_member_id!,
+               })
+             }
+             break
+           }
+         }
 
-        const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
-        if (humanMatch) {
-          const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
-          if (!dbM || dbM.status !== 'finished') {
-            setSimulating(false)
-            const [freshMembers, freshPicks] = await Promise.all([
-              getLeagueMembers(leagueId),
-              getDraftPicks(leagueId),
-            ])
-            const freshHumans = freshMembers.map(member => ({
-              memberId: member.id,
-              memberName: (member as any).profile?.display_name || '?',
-              teamName: member.team_name,
-              teamColor: member.team_color,
-              players: freshPicks.filter(p => p.member_id === member.id),
-            }))
-            humanTeamsRef.current = freshHumans
-            const ht = freshHumans.find(t => t.memberId === humanMatch.home_member_id)
-            const at = freshHumans.find(t => t.memberId === humanMatch.away_member_id)
-            if (ht && at && ht.players.length >= 11 && at.players.length >= 11) {
-              const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
-              const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
-              playingRef.current = true
-              setPhysicsMatch({
-                homeTeam, awayTeam,
-                matchId: humanMatch.id,
-                homeMemberId: humanMatch.home_member_id!,
-                awayMemberId: humanMatch.away_member_id!,
-              })
-            }
-            break
-          }
-        }
+         const results = await simulateWeek(weekMatches)
+         await advanceLeagueWeek(leagueId, currentWeek)
 
-        const results = await simulateWeek(weekMatches)
-        await advanceLeagueWeek(leagueId, currentWeek)
+         const updatedMatches = matchesRef.current.map(m => {
+           const r = results.find(x => x.id === m.id)
+           return r || m
+         })
+         matchesRef.current = updatedMatches
+         setMatches(updatedMatches)
+         setLeague(prev => prev ? { ...prev, current_week: (prev.current_week ?? 0) + 1 } : prev)
 
-        const updatedMatches = matchesRef.current.map(m => {
-          const r = results.find(x => x.id === m.id)
-          return r || m
-        })
-        matchesRef.current = updatedMatches
-        setMatches(updatedMatches)
-        setLeague(prev => prev ? { ...prev, current_week: (prev.current_week ?? 0) + 1 } : prev)
+         currentWeek++
+         advanced = true
+       }
 
-        currentWeek++
-        advanced = true
-      }
+       if (advanced || !hasHumanMatchInCurrentWeek(currentWeek)) {
+         const refreshedL = await getLeague(leagueId)
+         leagueRef.current = refreshedL
+         setLeague(refreshedL)
+       }
 
-      if (advanced || !hasHumanMatchInCurrentWeek(currentWeek)) {
-        const refreshedL = await getLeague(leagueId)
-        leagueRef.current = refreshedL
-        setLeague(refreshedL)
-      }
+       const allFinished = matchesRef.current.every(m => m.status === 'finished')
+       if (allFinished && leagueRef.current?.status !== 'finished') {
+         await updateLeagueStatus(leagueId, 'finished')
+         const refreshedL2 = await getLeague(leagueId)
+         leagueRef.current = refreshedL2
+         setLeague(refreshedL2)
+       }
+     } catch (err: any) {
+       console.error('Auto-simulate error:', err)
+       setError('Simulation error: ' + (err.message || 'Unknown error'))
+     }
 
-      const allFinished = matchesRef.current.every(m => m.status === 'finished')
-      if (allFinished && leagueRef.current?.status !== 'finished') {
-        await updateLeagueStatus(leagueId, 'finished')
-        const refreshedL2 = await getLeague(leagueId)
-        leagueRef.current = refreshedL2
-        setLeague(refreshedL2)
-      }
-    } catch (err: any) {
-      console.error('Auto-simulate error:', err)
-      setError('Simulation error: ' + (err.message || 'Unknown error'))
-    }
+     setSimulating(false)
+     runningRef.current = false
 
-    setSimulating(false)
-    runningRef.current = false
-
-    function hasHumanMatchInCurrentWeek(w: number) {
-      return matchesRef.current.some(m => m.week_number === w && m.home_member_id && m.away_member_id)
-    }
-  }, [leagueId, simulateWeek])
+     function hasHumanMatchInCurrentWeek(w: number) {
+       return matchesRef.current.some(m => m.week_number === w && m.home_member_id && m.away_member_id)
+     }
+   }, [leagueId, simulateWeek])
 
   async function handlePlayMatch() {
     if (playingRef.current) return
