@@ -145,7 +145,7 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
         )}
 
         {allDrafted && league.status === 'drafting' && isOwner && (
-          <button onClick={async () => { await updateLeagueStatus(league.id, 'active'); load() }}>Start Season</button>
+          <button onClick={async () => { await updateLeagueStatus(league.id, 'active'); window.location.hash = `#/online-league/${league.id}` }}>Start Season</button>
         )}
 
         {league.status === 'active' && (

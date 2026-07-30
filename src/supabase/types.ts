@@ -58,6 +58,7 @@ export interface MatchRecord {
   away_shots_on_target: number
   home_possession: number
   status: 'pending' | 'playing' | 'finished'
+  commentary: string | null
   played_at: string | null
   created_at: string
 }
