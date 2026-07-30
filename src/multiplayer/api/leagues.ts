@@ -48,6 +48,18 @@ export async function createLeague(
 }
 
 export async function joinLeague(inviteCode: string, profileId: string): Promise<League> {
+  // Try RPC first (bypasses RLS)
+  const { data, error } = await supabase.rpc('join_league_by_code', {
+    invite_code: inviteCode,
+    user_id: profileId,
+  })
+  if (!error && data) {
+    const result = data as { error?: string } & Partial<League>
+    if (result.error) throw new Error(result.error)
+    if (result.id) return result as League
+  }
+
+  // Fallback: manual join (relies on RLS policies allowing it)
   const { data: league } = await supabase
     .from('leagues')
     .select('*')
@@ -56,24 +68,15 @@ export async function joinLeague(inviteCode: string, profileId: string): Promise
   if (!league) throw new Error('Invalid invite code')
   const l = league as League
 
-  const { count } = await supabase
-    .from('league_members')
-    .select('*', { count: 'exact', head: true })
-    .eq('league_id', l.id)
-  if (count && count >= 6) throw new Error('League is full (max 6 players)')
-
-  const { data: existing } = await supabase
-    .from('league_members')
-    .select('id')
-    .eq('league_id', l.id)
-    .eq('profile_id', profileId)
-    .maybeSingle()
-  if (existing) throw new Error('Already a member of this league')
-
-  const { error } = await supabase
+  const { error: insertError } = await supabase
     .from('league_members')
     .insert({ league_id: l.id, profile_id: profileId, team_name: 'My Team', team_color: '#3388ff' })
-  if (error) throw error
+  if (insertError) {
+    if (insertError.message?.includes('unique') || insertError.message?.includes('duplicate')) {
+      throw new Error('Already a member of this league')
+    }
+    throw insertError
+  }
 
   return l
 }

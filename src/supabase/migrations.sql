@@ -159,8 +159,40 @@ CREATE POLICY "Members can view their own memberships" ON league_members
 
 CREATE POLICY "Users can join leagues" ON league_members
   FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND status = 'draft')
+    EXISTS (SELECT 1 FROM leagues WHERE id = league_id AND status IN ('draft', 'drafting'))
   );
+
+-- SECURITY DEFINER function to bypass RLS for joining leagues
+CREATE OR REPLACE FUNCTION join_league_by_code(invite_code TEXT, user_id UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  target_league leagues%ROWTYPE;
+  member_count INT;
+  existing_id UUID;
+BEGIN
+  SELECT * INTO target_league FROM public.leagues WHERE leagues.invite_code = join_league_by_code.invite_code;
+  IF NOT FOUND THEN
+    RETURN json_build_object('error', 'Invalid invite code');
+  END IF;
+  IF target_league.status NOT IN ('draft', 'drafting') THEN
+    RETURN json_build_object('error', 'League is no longer accepting new players');
+  END IF;
+  SELECT COUNT(*) INTO member_count FROM public.league_members WHERE league_id = target_league.id;
+  IF member_count >= 6 THEN
+    RETURN json_build_object('error', 'League is full (max 6 players)');
+  END IF;
+  SELECT id INTO existing_id FROM public.league_members WHERE league_id = target_league.id AND profile_id = user_id;
+  IF FOUND THEN
+    RETURN json_build_object('error', 'Already a member of this league');
+  END IF;
+  INSERT INTO public.league_members (league_id, profile_id, team_name, team_color)
+  VALUES (target_league.id, user_id, 'My Team', '#3388ff');
+  RETURN row_to_json(target_league)::json;
+END;
+$$;
 
 CREATE POLICY "Members can update their own membership" ON league_members
   FOR UPDATE USING (profile_id = auth.uid());
