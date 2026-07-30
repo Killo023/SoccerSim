@@ -31,11 +31,18 @@ export async function updateMatchResult(id: string, updates: Partial<Omit<MatchR
       .eq('id', id)
       .eq('status', 'pending')
       .select('id')
-    if (directError) {
-      console.error('Direct match update also failed:', directError.message)
-      return false
+    if (directError || (data ?? []).length === 0) {
+      console.warn('Pending-status direct update failed, trying force update without status filter:', directError?.message)
+      const { error: forceErr } = await supabase
+        .from('matches')
+        .update(updates)
+        .eq('id', id)
+      if (forceErr) {
+        console.error('Force match update also failed:', forceErr.message)
+        return false
+      }
     }
-    return (data ?? []).length > 0
+    return true
   }
   return true
 }

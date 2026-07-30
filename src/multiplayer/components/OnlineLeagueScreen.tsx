@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { getLeague, getLeagueMembers, updateLeagueStatus } from '../api/leagues'
 import { getDraftPicks } from '../api/draft'
-import { getLeagueMatches, updateMatchResult, advanceLeagueWeek, claimMatch } from '../api/matches'
+import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
 import { MatchControls } from '../../match/components/MatchControls'
@@ -520,15 +520,6 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const ht = humans.find(t => t.memberId === humanMatch.home_member_id)
     const at = humans.find(t => t.memberId === humanMatch.away_member_id)
     if (!ht || !at || ht.players.length < 11 || at.players.length < 11) { setError('Team data incomplete.'); return }
-
-    const claimed = await claimMatch(humanMatch.id)
-    if (!claimed) {
-      const fallbackOk = await updateMatchResult(humanMatch.id, { status: 'playing' })
-      if (!fallbackOk) {
-        setError('Could not start match. It may already be in progress.')
-        return
-      }
-    }
 
     const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
     const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
