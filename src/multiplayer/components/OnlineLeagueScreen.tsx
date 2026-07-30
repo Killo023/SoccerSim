@@ -3,11 +3,15 @@ import { getLeague, getLeagueMembers } from '../api/leagues'
 import { getDraftPicks } from '../api/draft'
 import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
-import { generateLLMMatch } from '../../match/engine/LLMSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
-import { LLMMatchView } from '../../match/components/LLMMatchView'
+import { MatchView } from '../../match/components/MatchView'
+import { MatchControls } from '../../match/components/MatchControls'
+import { StatsPanel } from '../../match/components/StatsPanel'
+import { EventFeed } from '../../match/components/EventFeed'
+import { MatchEngine } from '../../match/engine/MatchEngine'
+import { MatchRenderer } from '../../match/renderer/MatchRenderer'
 import { ALL_CLUBS, LEAGUES } from '../../league/data/clubs'
-import type { TeamData, TeamSide, Position } from '../../match/types'
+import type { TeamData, TeamSide, Position, MatchState } from '../../match/types'
 import type { League, MatchRecord } from '../../supabase/types'
 import type { DraftPick } from '../../supabase/types'
 import type { Club } from '../../league/types'
@@ -76,24 +80,101 @@ function generateDoubleRoundRobin(teamNames: string[]): [string, string][][] {
 
 const BOT_TEAM_COUNT = 34
 
+function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
+  homeTeam: TeamData
+  awayTeam: TeamData
+  onFinish: (result: { homeGoals: number; awayGoals: number; homeShots: number; awayShots: number; homeShotsOnTarget: number; awayShotsOnTarget: number; homePossession: number }) => void
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [finished, setFinished] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [state, setState] = useState<MatchState | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const renderer = new MatchRenderer(canvas)
+
+    const engine = new MatchEngine({
+      homeTeam,
+      awayTeam,
+      onStateUpdate: (s) => {
+        renderer.render(s)
+        setState({ ...s })
+        if (s.status === 'finished' && !finished) {
+          setFinished(true)
+          setResult({
+            homeGoals: s.stats.homeGoals,
+            awayGoals: s.stats.awayGoals,
+            homeShots: s.stats.homeShots,
+            awayShots: s.stats.awayShots,
+            homeShotsOnTarget: s.stats.homeShotsOnTarget,
+            awayShotsOnTarget: s.stats.awayShotsOnTarget,
+            homePossession: s.stats.homePossession,
+          })
+        }
+      },
+    })
+    engine.start()
+
+    const handleResize = () => { if (canvas) renderer.resize(canvas) }
+    window.addEventListener('resize', handleResize)
+    return () => { engine.destroy(); window.removeEventListener('resize', handleResize) }
+  }, [])
+
+  async function handleFinish() {
+    if (result) onFinish(result)
+  }
+
+  return (
+    <div className="match-screen">
+      <div className="match-main">
+        <div className="match-canvas-container">
+          <canvas ref={canvasRef} className="match-canvas" tabIndex={0} />
+          {finished && (
+            <div className="match-end-overlay">
+              <div className="match-end-content">
+                <h2>Full Time</h2>
+                <div className="match-end-score">
+                  <span>{homeTeam.shortName}</span>
+                  <span className="match-end-num">{result?.homeGoals ?? 0} - {result?.awayGoals ?? 0}</span>
+                  <span>{awayTeam.shortName}</span>
+                </div>
+                <button onClick={handleFinish} className="ol-btn ol-btn-play">
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="match-sidebar">
+          <StatsPanel />
+          <EventFeed />
+        </div>
+      </div>
+      <MatchControls />
+    </div>
+  )
+}
+
 export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   const [league, setLeague] = useState<League | null>(null)
   const [matches, setMatches] = useState<MatchRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [simulating, setSimulating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [watchData, setWatchData] = useState<{
-    homeTeam: TeamData; awayTeam: TeamData
-    events: any[]; llmEvents: any[]
-    homeGoals: number; awayGoals: number
-    matchId: string
-  } | null>(null)
+  const [botClubs, setBotClubs] = useState<Club[]>([])
 
   const humanTeamsRef = useRef<DraftTeam[]>([])
   const botClubsRef = useRef<Club[]>([])
   const leagueRef = useRef<League | null>(null)
   const matchesRef = useRef<MatchRecord[]>([])
   const runningRef = useRef(false)
+
+  const [physicsMatch, setPhysicsMatch] = useState<{
+    homeTeam: TeamData; awayTeam: TeamData
+    matchId: string; homeMemberId: string; awayMemberId: string
+  } | null>(null)
 
   async function load() {
     try {
@@ -122,10 +203,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         const usedNames = new Set(ht.map(t => t.teamName))
         const bots = ALL_CLUBS.filter(c => !usedNames.has(c.name)).slice(0, BOT_TEAM_COUNT)
         botClubsRef.current = bots
+        setBotClubs(bots)
 
         if (existing.length === 0 && bots.length >= 4) {
           const allTeamNames = [...ht.map(t => t.teamName), ...bots.map(b => b.name)]
-          console.log(`Generating fixtures for ${allTeamNames.length} teams...`)
           const schedule = generateDoubleRoundRobin(allTeamNames)
           const allFixtures: any[] = []
           for (let w = 0; w < schedule.length; w++) {
@@ -149,12 +230,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
             }
           }
 
-          console.log(`Inserting ${allFixtures.length} fixtures in chunks...`)
           for (let i = 0; i < allFixtures.length; i += 100) {
             const chunk = allFixtures.slice(i, i + 100)
             const { error: insertErr } = await supabase.from('matches').insert(chunk)
             if (insertErr) {
-              console.error('Fixture insert error:', insertErr)
               setError('Failed to generate fixtures: ' + insertErr.message)
               setLoading(false)
               return
@@ -164,7 +243,6 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           const refreshed = await getLeagueMatches(leagueId)
           matchesRef.current = refreshed
           setMatches(refreshed)
-          console.log(`Inserted ${allFixtures.length} fixtures, fetched ${refreshed.length} back.`)
         } else {
           matchesRef.current = existing
           setMatches(existing)
@@ -180,9 +258,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     setLoading(false)
   }
 
-  useEffect(() => {
-    load()
-  }, [leagueId])
+  useEffect(() => { load() }, [leagueId])
 
   useEffect(() => {
     if (!loading && matchesRef.current.length > 0 && league && !runningRef.current) {
@@ -190,9 +266,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     }
   }, [loading])
 
-  const simulateWeek = useCallback(async (weekMatches: MatchRecord[]) => {
+  const simulateWeek = useCallback(async (weekMatches: MatchRecord[]): Promise<MatchRecord[]> => {
     const clubs = botClubsRef.current
     const humans = humanTeamsRef.current
+    const updated: MatchRecord[] = []
 
     for (const match of weekMatches) {
       try {
@@ -204,7 +281,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           homeData = draftPicksToTeamData(ht.players, match.home_team_name, ht.teamColor, 'home')
         } else {
           const club = clubs.find(c => c.name === match.home_team_name)
-          if (!club) { console.warn('No bot club found for', match.home_team_name); continue }
+          if (!club) continue
           homeData = clubToTeamData(club, 'home')
         }
 
@@ -214,7 +291,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           awayData = draftPicksToTeamData(at.players, match.away_team_name, at.teamColor, 'away')
         } else {
           const club = clubs.find(c => c.name === match.away_team_name)
-          if (!club) { console.warn('No bot club found for', match.away_team_name); continue }
+          if (!club) continue
           awayData = clubToTeamData(club, 'away')
         }
 
@@ -230,10 +307,23 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           status: 'finished',
           played_at: new Date().toISOString(),
         })
+
+        updated.push({
+          ...match,
+          home_goals: result.homeGoals,
+          away_goals: result.awayGoals,
+          home_shots: result.homeShots,
+          away_shots: result.awayShots,
+          home_shots_on_target: result.homeShotsOnTarget,
+          away_shots_on_target: result.awayShotsOnTarget,
+          home_possession: result.homePossession,
+          status: 'finished',
+        })
       } catch (err) {
         console.error(`Error simulating match ${match.id}:`, err)
       }
     }
+    return updated
   }, [])
 
   const runAutoSimulate = useCallback(async () => {
@@ -245,43 +335,40 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     try {
       let currentWeek = l.current_week || 1
-      const allMatches = matchesRef.current
-      const totalWeeks = allMatches.length > 0 ? Math.max(...allMatches.map(m => m.week_number)) : 38
+      const totalWeeks = matchesRef.current.length > 0 ? Math.max(...matchesRef.current.map(m => m.week_number)) : 38
       let advanced = false
 
-      console.log(`Auto-simulate starting from week ${currentWeek}, total ${totalWeeks} weeks, ${allMatches.length} matches`)
-
       while (currentWeek <= totalWeeks) {
-        const weekMatches = allMatches.filter(m => m.week_number === currentWeek && m.status === 'pending')
+        const weekMatches = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
         if (weekMatches.length === 0) {
           currentWeek++
           continue
         }
 
         const hasHumanMatch = weekMatches.some(m => m.home_member_id && m.away_member_id)
-
         if (hasHumanMatch) {
-          console.log(`Stopping at week ${currentWeek}: human match pending`)
-          setSimulating(false)
-          runningRef.current = false
-          return
+          break
         }
 
-        console.log(`Simulating week ${currentWeek}: ${weekMatches.length} matches`)
-        await simulateWeek(weekMatches)
+        const results = await simulateWeek(weekMatches)
         await advanceLeagueWeek(leagueId)
+
+        const updatedMatches = matchesRef.current.map(m => {
+          const r = results.find(x => x.id === m.id)
+          return r || m
+        })
+        matchesRef.current = updatedMatches
+        setMatches(updatedMatches)
+        setLeague(prev => prev ? { ...prev, current_week: prev.current_week ? prev.current_week + 1 : 1 } : prev)
+
         currentWeek++
         advanced = true
       }
 
-      if (advanced) {
-        const refreshed = await getLeagueMatches(leagueId)
-        matchesRef.current = refreshed
-        setMatches(refreshed)
+      if (advanced || !hasHumanMatchInCurrentWeek(currentWeek)) {
         const refreshedL = await getLeague(leagueId)
         leagueRef.current = refreshedL
         setLeague(refreshedL)
-        console.log(`Auto-simulate complete. ${refreshed.filter(m => m.status === 'finished').length} matches finished.`)
       }
     } catch (err: any) {
       console.error('Auto-simulate error:', err)
@@ -290,6 +377,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     setSimulating(false)
     runningRef.current = false
+
+    function hasHumanMatchInCurrentWeek(w: number) {
+      return matchesRef.current.some(m => m.week_number === w && m.home_member_id && m.away_member_id)
+    }
   }, [leagueId, simulateWeek])
 
   async function handlePlayMatch() {
@@ -297,8 +388,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     if (!l) return
 
     const currentWeek = l.current_week || 1
-    const allMatches = matchesRef.current
-    const pending = allMatches.filter(m => m.week_number === currentWeek && m.status === 'pending')
+    const pending = matchesRef.current.filter(m => m.week_number === currentWeek && m.status === 'pending')
     const humanMatch = pending.find(m => m.home_member_id && m.away_member_id)
     if (!humanMatch) return
 
@@ -310,57 +400,38 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
     const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
 
-    try {
-      const result = await generateLLMMatch(homeTeam, awayTeam)
-      const commentaryStr = JSON.stringify(result.llmEvents)
-      await updateMatchResult(humanMatch.id, {
-        home_goals: result.homeGoals,
-        away_goals: result.awayGoals,
-        status: 'finished',
-        commentary: commentaryStr,
-        played_at: new Date().toISOString(),
-      })
-    } catch {
-      const result = fastSimulate(homeTeam, awayTeam)
-      await updateMatchResult(humanMatch.id, {
-        home_goals: result.homeGoals,
-        away_goals: result.awayGoals,
-        home_shots: result.homeShots,
-        away_shots: result.awayShots,
-        home_shots_on_target: result.homeShotsOnTarget,
-        away_shots_on_target: result.awayShotsOnTarget,
-        home_possession: result.homePossession,
-        status: 'finished',
-        played_at: new Date().toISOString(),
-      })
-    }
-
-    const refreshed = await getLeagueMatches(leagueId)
-    matchesRef.current = refreshed
-    setMatches(refreshed)
-    setWatchData({
-      homeTeam: { ...homeTeam, color: ht.teamColor },
-      awayTeam: { ...awayTeam, color: at.teamColor },
-      events: [],
-      llmEvents: [],
-      homeGoals: 0,
-      awayGoals: 0,
+    setPhysicsMatch({
+      homeTeam, awayTeam,
       matchId: humanMatch.id,
+      homeMemberId: humanMatch.home_member_id!,
+      awayMemberId: humanMatch.away_member_id!,
     })
   }
 
-  async function handleMatchFinish() {
-    setWatchData(null)
-    const l = leagueRef.current
-    if (!l) return
+  async function handlePhysicsFinish(result: { homeGoals: number; awayGoals: number; homeShots: number; awayShots: number; homeShotsOnTarget: number; awayShotsOnTarget: number; homePossession: number }) {
+    if (!physicsMatch) return
 
+    await updateMatchResult(physicsMatch.matchId, {
+      home_goals: result.homeGoals,
+      away_goals: result.awayGoals,
+      home_shots: result.homeShots,
+      away_shots: result.awayShots,
+      home_shots_on_target: result.homeShotsOnTarget,
+      away_shots_on_target: result.awayShotsOnTarget,
+      home_possession: result.homePossession,
+      status: 'finished',
+      played_at: new Date().toISOString(),
+    })
+
+    setPhysicsMatch(null)
     await advanceLeagueWeek(leagueId)
-    const refreshedL = await getLeague(leagueId)
-    leagueRef.current = refreshedL
-    setLeague(refreshedL)
+
     const refreshedM = await getLeagueMatches(leagueId)
     matchesRef.current = refreshedM
     setMatches(refreshedM)
+    const refreshedL = await getLeague(leagueId)
+    leagueRef.current = refreshedL
+    setLeague(refreshedL)
   }
 
   async function handleForceSimulate() {
@@ -373,21 +444,26 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     setError(null)
 
     try {
-      const allMatches = matchesRef.current
-      const totalWeeks = allMatches.length > 0 ? Math.max(...allMatches.map(m => m.week_number)) : 38
+      let currentWeek = l.current_week || 1
+      const totalWeeks = matchesRef.current.length > 0 ? Math.max(...matchesRef.current.map(m => m.week_number)) : 38
 
-      for (let w = l.current_week || 1; w <= totalWeeks; w++) {
-        const weekMatches = allMatches.filter(m => m.week_number === w && m.status === 'pending')
+      for (let w = currentWeek; w <= totalWeeks; w++) {
+        const weekMatches = matchesRef.current.filter(m => m.week_number === w && m.status === 'pending')
         if (weekMatches.length === 0) continue
         const hasHumanMatch = weekMatches.some(m => m.home_member_id && m.away_member_id)
         if (hasHumanMatch) break
-        await simulateWeek(weekMatches)
+        const results = await simulateWeek(weekMatches)
         await advanceLeagueWeek(leagueId)
+
+        const updatedMatches = matchesRef.current.map(m => {
+          const r = results.find(x => x.id === m.id)
+          return r || m
+        })
+        matchesRef.current = updatedMatches
+        setMatches(updatedMatches)
+        setLeague(prev => prev ? { ...prev, current_week: (prev.current_week || 0) + 1 } : prev)
       }
 
-      const refreshed = await getLeagueMatches(leagueId)
-      matchesRef.current = refreshed
-      setMatches(refreshed)
       const refreshedL = await getLeague(leagueId)
       leagueRef.current = refreshedL
       setLeague(refreshedL)
@@ -400,6 +476,16 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     runningRef.current = false
   }
 
+  if (physicsMatch) {
+    return (
+      <OnlineMatchView
+        homeTeam={physicsMatch.homeTeam}
+        awayTeam={physicsMatch.awayTeam}
+        onFinish={handlePhysicsFinish}
+      />
+    )
+  }
+
   const currentWeek = league?.current_week || 1
   const totalWeeks = matches.length > 0 ? Math.max(...matches.map(m => m.week_number)) : 38
 
@@ -407,7 +493,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   const hasHumanMatch = pending.some(m => m.home_member_id && m.away_member_id)
   const allTeams = [
     ...humanTeamsRef.current.map(t => ({ name: t.teamName, color: t.teamColor, isHuman: true })),
-    ...botClubsRef.current.map(c => ({ name: c.name, color: c.color, isHuman: false })),
+    ...botClubs.map(c => ({ name: c.name, color: c.color, isHuman: false })),
   ]
 
   const standings = allTeams.map(team => {
@@ -422,20 +508,6 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const ga = teamMatches.reduce((sum, m) => sum + (m.home_team_name === team.name ? m.away_goals : m.home_goals), 0)
     return { ...team, played: teamMatches.length, wins, draws, losses, gf, ga, gd: gf - ga, pts: wins * 3 + draws }
   }).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
-
-  if (watchData) {
-    return (
-      <LLMMatchView
-        homeTeam={watchData.homeTeam}
-        awayTeam={watchData.awayTeam}
-        events={watchData.events}
-        llmEvents={watchData.llmEvents}
-        homeGoals={watchData.homeGoals}
-        awayGoals={watchData.awayGoals}
-        onFinish={handleMatchFinish}
-      />
-    )
-  }
 
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Building league schedule...</p></div>
   if (!league) return <div className="auth-page"><div className="auth-card"><p>League not found</p></div></div>
@@ -479,7 +551,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
             </div>
           </div>
           <button onClick={handlePlayMatch} className="ol-btn ol-btn-play">
-            Play Match (AI Commentary)
+            Play Match
           </button>
         </div>
       )}
