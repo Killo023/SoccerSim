@@ -124,9 +124,18 @@ export async function getUserLeagues(profileId: string): Promise<(League & { mem
 }
 
 export async function updateLeagueStatus(leagueId: string, status: League['status']): Promise<void> {
-  await supabase.from('leagues').update({ status }).eq('id', leagueId)
+  const { error } = await supabase.rpc('update_league_status', {
+    p_league_id: leagueId,
+    p_status: status,
+  })
+  if (error) throw error
 }
 
 export async function updateMemberTeam(memberId: string, teamName: string, teamColor: string): Promise<void> {
-  await supabase.from('league_members').update({ team_name: teamName, team_color: teamColor }).eq('id', memberId)
+  const { error } = await supabase.rpc('update_member_team', {
+    p_member_id: memberId,
+    p_team_name: teamName,
+    p_team_color: teamColor,
+  })
+  if (error) throw error
 }

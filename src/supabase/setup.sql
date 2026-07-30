@@ -176,6 +176,24 @@ AS $$
   UPDATE public.league_members SET ready = p_ready WHERE id = p_member_id;
 $$;
 
+-- Update a member's team name/color
+CREATE OR REPLACE FUNCTION update_member_team(p_member_id UUID, p_team_name TEXT, p_team_color TEXT)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.league_members SET team_name = p_team_name, team_color = p_team_color WHERE id = p_member_id;
+$$;
+
+-- Update league status
+CREATE OR REPLACE FUNCTION update_league_status(p_league_id UUID, p_status TEXT)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.leagues SET status = p_status WHERE id = p_league_id;
+$$;
+
 -- Check if all members have completed drafts
 CREATE OR REPLACE FUNCTION all_drafts_complete(p_league_id UUID)
 RETURNS BOOLEAN
