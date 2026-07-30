@@ -94,7 +94,6 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
     if (!canvas) return
     const renderer = new MatchRenderer(canvas)
 
-    const isMobile = 'ontouchstart' in window && window.innerWidth < 768
     const engine = new MatchEngine({
       homeTeam,
       awayTeam,
@@ -115,7 +114,6 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
         }
       },
     })
-    if (isMobile) engine.setSpeed(4)
     engine.start()
 
     const handleResize = () => { if (canvas) renderer.resize(canvas) }
