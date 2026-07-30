@@ -44,9 +44,21 @@ function AppContent() {
   const route = useHashRoute()
   const view = useLeagueStore(s => s.view)
   const mpPhase = useMultiplayerStore(s => s.phase)
-  const { user, loading } = useAuth()
+  const { user, loading, authError } = useAuth()
 
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Loading...</p></div>
+
+  if (authError) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <h1>Connection Error</h1>
+          <p>{authError}</p>
+          <p style={{ fontSize: 12, color: '#666' }}>Make sure your Supabase project is active at <a href="https://supabase.com/dashboard" target="_blank" rel="noopener" style={{ color: '#646cff' }}>supabase.com/dashboard</a> and the URL + anon key in your Vercel env vars are correct.</p>
+        </div>
+      </div>
+    )
+  }
 
   switch (route.page) {
     case 'login':
