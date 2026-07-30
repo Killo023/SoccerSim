@@ -63,27 +63,6 @@ export function MainMenu() {
         </div>
 
         <div className="menu-buttons">
-          <button className="menu-btn primary" onClick={() => setView('league')}>
-            <span className="menu-icon">🏆</span>
-            <div className="menu-btn-text">
-              <span className="menu-btn-title">League Mode</span>
-              <span className="menu-btn-desc">{currentLeague?.name} — {currentLeague?.clubs.length} Teams</span>
-            </div>
-          </button>
-          <button className="menu-btn" onClick={() => setView('cup')}>
-            <span className="menu-icon">🏅</span>
-            <div className="menu-btn-text">
-              <span className="menu-btn-title">Cup Tournament</span>
-              <span className="menu-btn-desc">{currentLeague?.name} Cup</span>
-            </div>
-          </button>
-          <button className="menu-btn" onClick={() => setView('match')}>
-            <span className="menu-icon">⚽</span>
-            <div className="menu-btn-text">
-              <span className="menu-btn-title">Quick Match</span>
-              <span className="menu-btn-desc">Red FC vs Blue City</span>
-            </div>
-          </button>
           <button className="menu-btn primary" onClick={() => setView('multiplayer')}>
             <span className="menu-icon">👥</span>
             <div className="menu-btn-text">
