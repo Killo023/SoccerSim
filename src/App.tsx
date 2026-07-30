@@ -1,3 +1,5 @@
+import { Component, type ReactNode } from 'react'
+import { isSupabaseConfigured } from './supabase/client'
 import { AuthProvider } from './auth/context/AuthProvider'
 import { useAuth } from './auth/context/useAuth'
 import { ProtectedRoute } from './auth/components/ProtectedRoute'
@@ -17,6 +19,25 @@ import { TeamCreationScreen } from './multiplayer/components/TeamCreationScreen'
 import { MultiplayerLobby } from './multiplayer/components/MultiplayerLobby'
 import { MultiplayerLeagueScreen } from './multiplayer/components/MultiplayerLeagueScreen'
 import { useMultiplayerStore } from './multiplayer/store'
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="auth-page">
+          <div className="auth-card">
+            <h1>Something went wrong</h1>
+            <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{this.state.error.message}</pre>
+            <button onClick={() => { this.setState({ error: null }); window.location.hash = '#/' }}>Reload</button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 function AppContent() {
   const route = useHashRoute()
@@ -60,9 +81,22 @@ function AppContent() {
 }
 
 export default function App() {
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <h1>Configuration Required</h1>
+          <p>Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your Vercel environment variables or local <code>.env</code> file.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
