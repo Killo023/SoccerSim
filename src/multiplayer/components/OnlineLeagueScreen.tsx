@@ -365,9 +365,11 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     for (const match of weekMatches) {
       try {
         const { data: dbMatch } = await supabase.from('matches').select('status,home_goals,away_goals,home_shots,away_shots,home_shots_on_target,away_shots_on_target,home_possession').eq('id', match.id).maybeSingle()
-        if (dbMatch && dbMatch.status === 'finished') {
-          updated.push({ ...match, ...dbMatch, status: 'finished' })
-          continue
+        if (dbMatch && (dbMatch.status === 'finished' || dbMatch.status === 'playing')) {
+          if (dbMatch.status === 'finished') {
+            updated.push({ ...match, ...dbMatch, status: 'finished' })
+          }
+          continue  // Skip 'playing' matches — don't fast-simulate a live match
         }
 
         let homeData: TeamData, awayData: TeamData
@@ -442,12 +444,11 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         if (weekMatches.length === 0) {
           currentWeek++
           continue
-        }
-
-        const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
-        if (humanMatch) {
-          const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
-          if (!dbM || dbM.status !== 'finished') {
+        }         const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
+         if (humanMatch) {
+           const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
+           // If the human match is still 'pending' or 'playing', don't fast-simulate it
+           if (!dbM || dbM.status === 'pending' || dbM.status === 'playing') {
             setSimulating(false)
             const [freshMembers, freshPicks] = await Promise.all([
               getLeagueMembers(leagueId),
@@ -532,7 +533,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   useEffect(() => {
     if (loading || !league) return
     const interval = setInterval(async () => {
-      if (runningRef.current) return
+      if (runningRef.current || playingRef.current) return
       const [freshMatches, freshLeague] = await Promise.all([
         getLeagueMatches(leagueId),
         getLeague(leagueId),
@@ -546,7 +547,8 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       // If the league has pending matches and no human match this week,
       // kick off the auto-simulator (handles the case where this client
       // missed the runAutoSimulate call due to race conditions).
-      if (!runningRef.current && freshLeague && freshLeague.status === 'active') {
+      // Don't trigger if a match is currently being played (playingRef).
+      if (!runningRef.current && !playingRef.current && freshLeague && freshLeague.status === 'active') {
         const currentWeek = freshLeague.current_week || 1
         const pendingMatches = freshMatches.filter(
           m => m.week_number === currentWeek && m.status === 'pending'

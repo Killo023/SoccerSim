@@ -6,7 +6,7 @@ export interface Vec2 {
 export type TeamSide = 'home' | 'away'
 export type Position = 'GK' | 'CB' | 'LB' | 'RB' | 'CDM' | 'CM' | 'CAM' | 'LM' | 'RM' | 'LW' | 'RW' | 'ST'
 export type MatchStatus = 'paused' | 'playing' | 'finished'
-export type MatchEventType = 'goal' | 'shot' | 'shot_off_target' | 'save' | 'pass' | 'foul' | 'corner' | 'goal_kick' | 'throw_in' | 'half_time' | 'full_time'
+export type MatchEventType = 'goal' | 'own_goal' | 'shot' | 'shot_off_target' | 'save' | 'pass' | 'foul' | 'corner' | 'goal_kick' | 'throw_in' | 'half_time' | 'full_time'
 
 export interface PlayerAttrs {
   pace: number

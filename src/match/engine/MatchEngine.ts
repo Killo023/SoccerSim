@@ -196,26 +196,44 @@ export class MatchEngine {
     const inGoalX = this.state.ball.x > (PITCH_WIDTH - GOAL_WIDTH) / 2 && this.state.ball.x < (PITCH_WIDTH + GOAL_WIDTH) / 2
 
     if (this.state.ball.y < -1 && inGoalX) {
-      const shooter = this.state.players.find(p => p.id === this.state.ball.lastTouchedBy)
+      const lastPlayer = this.state.players.find(p => p.id === this.state.ball.lastTouchedBy)
+      const isOwnGoal = lastPlayer && lastPlayer.team === 'away'
       this.state.stats.homeGoals++
-      this.state.events.push({
-        id: uuid(), type: 'goal', minute: this.state.matchMinute, team: 'home',
-        playerId: shooter?.id, x: this.state.ball.x, y: this.state.ball.y,
-        description: `GOAL! ${shooter?.name ?? 'Unknown'} scores! (${this.state.stats.homeGoals}-${this.state.stats.awayGoals})`,
-      })
+      if (isOwnGoal) {
+        this.state.events.push({
+          id: uuid(), type: 'own_goal', minute: this.state.matchMinute, team: 'home',
+          playerId: lastPlayer?.id, x: this.state.ball.x, y: this.state.ball.y,
+          description: `OWN GOAL! ${lastPlayer?.name ?? 'Unknown'} puts it into his own net! (${this.state.stats.homeGoals}-${this.state.stats.awayGoals})`,
+        })
+      } else {
+        this.state.events.push({
+          id: uuid(), type: 'goal', minute: this.state.matchMinute, team: 'home',
+          playerId: lastPlayer?.id, x: this.state.ball.x, y: this.state.ball.y,
+          description: `GOAL! ${lastPlayer?.name ?? 'Unknown'} scores! (${this.state.stats.homeGoals}-${this.state.stats.awayGoals})`,
+        })
+      }
       resetBallAfterGoal(this.state.ball)
       this.cooldownTimer = 2; this.cooldownReason = 'goal'
       this.state.ball.lastTouchedTeam = 'away'
       return
     }
     if (this.state.ball.y > PITCH_LENGTH + 1 && inGoalX) {
-      const shooter = this.state.players.find(p => p.id === this.state.ball.lastTouchedBy)
+      const lastPlayer = this.state.players.find(p => p.id === this.state.ball.lastTouchedBy)
+      const isOwnGoal = lastPlayer && lastPlayer.team === 'home'
       this.state.stats.awayGoals++
-      this.state.events.push({
-        id: uuid(), type: 'goal', minute: this.state.matchMinute, team: 'away',
-        playerId: shooter?.id, x: this.state.ball.x, y: this.state.ball.y,
-        description: `GOAL! ${shooter?.name ?? 'Unknown'} scores! (${this.state.stats.homeGoals}-${this.state.stats.awayGoals})`,
-      })
+      if (isOwnGoal) {
+        this.state.events.push({
+          id: uuid(), type: 'own_goal', minute: this.state.matchMinute, team: 'away',
+          playerId: lastPlayer?.id, x: this.state.ball.x, y: this.state.ball.y,
+          description: `OWN GOAL! ${lastPlayer?.name ?? 'Unknown'} puts it into his own net! (${this.state.stats.homeGoals}-${this.state.stats.awayGoals})`,
+        })
+      } else {
+        this.state.events.push({
+          id: uuid(), type: 'goal', minute: this.state.matchMinute, team: 'away',
+          playerId: lastPlayer?.id, x: this.state.ball.x, y: this.state.ball.y,
+          description: `GOAL! ${lastPlayer?.name ?? 'Unknown'} scores! (${this.state.stats.homeGoals}-${this.state.stats.awayGoals})`,
+        })
+      }
       resetBallAfterGoal(this.state.ball)
       this.cooldownTimer = 2; this.cooldownReason = 'goal'
       this.state.ball.lastTouchedTeam = 'home'

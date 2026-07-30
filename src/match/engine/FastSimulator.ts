@@ -80,6 +80,7 @@ export function fastSimulate(homeTeam: TeamData, awayTeam: TeamData): FixtureRes
 
     const inGoalX = state.ball.x > (PITCH_WIDTH - GOAL_WIDTH) / 2 && state.ball.x < (PITCH_WIDTH + GOAL_WIDTH) / 2
     if (state.ball.y < -1 && inGoalX) {
+      // FastSim doesn't create events (only updates stats)
       state.stats.homeGoals++
       resetBallAfterGoal(state.ball)
       cooldownTimer = 3
