@@ -35,4 +35,4 @@ export const PASS_DISTANCE_MAX = 40
 
 export const AI_THINK_INTERVAL = 0.2
 
-export const SPEED_OPTIONS = [1, 2, 4] as const
+export const SPEED_OPTIONS = [0.5, 1, 2, 4] as const

@@ -13,6 +13,7 @@ import { ALL_CLUBS, LEAGUES } from '../../league/data/clubs'
 import type { TeamData, TeamSide, Position, MatchState } from '../../match/types'
 import { setMatchSeed, seedFromString } from '../../match/rng'
 import type { League, MatchRecord } from '../../supabase/types'
+import { useMatchStore } from '../../store/matchStore'
 import type { DraftPick } from '../../supabase/types'
 import type { Club } from '../../league/types'
 import { supabase } from '../../supabase/client'
@@ -90,6 +91,10 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
   const [result, setResult] = useState<any>(null)
   const [state, setState] = useState<MatchState | null>(null)
 
+  const storeSetMatchState = useMatchStore(s => s.setMatchState)
+  const storeSetEngineRef = useMatchStore(s => s.setEngineRef)
+  const storeSetJumpedIn = useMatchStore(s => s.setJumpedIn)
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -103,6 +108,7 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
       onStateUpdate: (s) => {
         renderer.render(s)
         setState({ ...s })
+        storeSetMatchState({ ...s })
         if (s.status === 'finished' && !finished) {
           setFinished(true)
           setResult({
@@ -117,12 +123,14 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
         }
       },
     })
+    storeSetEngineRef({ current: engine })
+    storeSetJumpedIn(false)
     engine.start()
 
     const handleResize = () => { if (canvas) renderer.resize(canvas) }
     window.addEventListener('resize', handleResize)
     return () => { engine.destroy(); window.removeEventListener('resize', handleResize) }
-  }, [])
+  }, [homeTeam, awayTeam, homeTeam.id, awayTeam.id, storeSetMatchState, storeSetEngineRef, storeSetJumpedIn])
 
   async function handleFinish() {
     if (result) onFinish(result)
