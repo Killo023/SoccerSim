@@ -204,6 +204,15 @@ AS $$
   UPDATE public.leagues SET current_week = COALESCE(current_week, 0) + 1 WHERE id = p_league_id;
 $$;
 
+-- Update match result (bypass RLS)
+CREATE OR REPLACE FUNCTION update_match_result(p_match_id UUID, p_home_goals INT, p_away_goals INT, p_home_shots INT, p_away_shots INT, p_home_shots_on_target INT, p_away_shots_on_target INT, p_home_possession INT, p_status TEXT, p_commentary TEXT DEFAULT NULL)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.matches SET home_goals = p_home_goals, away_goals = p_away_goals, home_shots = p_home_shots, away_shots = p_away_shots, home_shots_on_target = p_home_shots_on_target, away_shots_on_target = p_away_shots_on_target, home_possession = p_home_possession, status = p_status, commentary = COALESCE(p_commentary, commentary), played_at = NOW() WHERE id = p_match_id;
+$$;
+
 -- Check if all members have completed drafts
 CREATE OR REPLACE FUNCTION all_drafts_complete(p_league_id UUID)
 RETURNS BOOLEAN
