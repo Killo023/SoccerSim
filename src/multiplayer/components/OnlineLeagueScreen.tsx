@@ -78,7 +78,7 @@ function generateDoubleRoundRobin(teamNames: string[]): [string, string][][] {
   return [...rounds, ...secondHalf]
 }
 
-const BOT_TEAM_COUNT = 34
+const BOT_TEAM_COUNT = 8
 
 function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
   homeTeam: TeamData
@@ -281,7 +281,9 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
       if (l) {
         const usedNames = new Set(ht.map(t => t.teamName))
-        const bots = ALL_CLUBS.filter(c => !usedNames.has(c.name)).slice(0, BOT_TEAM_COUNT)
+        const leagueDef = LEAGUES.find(def => def.id === l.league_type)
+        const botPool = leagueDef?.clubs ?? ALL_CLUBS
+        const bots = botPool.filter(c => !usedNames.has(c.name)).slice(0, BOT_TEAM_COUNT)
         botClubsRef.current = bots
         setBotClubs(bots)
 
@@ -546,6 +548,17 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       status: 'finished',
       played_at: new Date().toISOString(),
     })
+
+    const l = leagueRef.current
+    if (l) {
+      const currentWeek = l.current_week || 1
+      const remainingAIMatches = matchesRef.current.filter(
+        m => m.week_number === currentWeek && m.status === 'pending' && !(m.home_member_id && m.away_member_id)
+      )
+      if (remainingAIMatches.length > 0) {
+        await simulateWeek(remainingAIMatches)
+      }
+    }
 
     setPhysicsMatch(null)
     await advanceLeagueWeek(leagueId)
