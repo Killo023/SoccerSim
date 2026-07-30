@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useAuth } from '../../auth/context/useAuth'
 import { useLeagueStore } from '../../store/leagueStore'
 
 export function MainMenu() {
+  const { user, profile, signOut } = useAuth()
   const setView = useLeagueStore(s => s.setView)
   const leagues = useLeagueStore(s => s.leagues)
   const selectLeague = useLeagueStore(s => s.selectLeague)
@@ -23,6 +25,19 @@ export function MainMenu() {
           <h1>Interactive Soccer</h1>
           <p className="subtitle">Career Mode</p>
         </div>
+
+        {user ? (
+          <div className="auth-status">
+            <span>Logged in as <strong>{profile?.display_name || user.email}</strong></span>
+            <button className="btn-small" onClick={() => signOut()}>Sign Out</button>
+          </div>
+        ) : (
+          <div className="auth-status">
+            <a href="#/login" className="auth-link">Login</a>
+            <span style={{ margin: '0 8px', color: '#888' }}>|</span>
+            <a href="#/signup" className="auth-link">Sign Up</a>
+          </div>
+        )}
 
         <div className="league-selector">
           <button className="league-select-btn" onClick={() => setShowLeagueSelect(!showLeagueSelect)}>
@@ -76,6 +91,24 @@ export function MainMenu() {
               <span className="menu-btn-desc">Create teams &amp; play together</span>
             </div>
           </button>
+          {user && (
+            <>
+              <button className="menu-btn" onClick={() => { window.location.hash = '#/create-league' }}>
+                <span className="menu-icon">➕</span>
+                <div className="menu-btn-text">
+                  <span className="menu-btn-title">Create Online League</span>
+                  <span className="menu-btn-desc">Invite friends over the internet</span>
+                </div>
+              </button>
+              <button className="menu-btn" onClick={() => { const code = prompt('Enter invite code:'); if (code) window.location.hash = `#/join/${code.toUpperCase()}` }}>
+                <span className="menu-icon">🔗</span>
+                <div className="menu-btn-text">
+                  <span className="menu-btn-title">Join League</span>
+                  <span className="menu-btn-desc">Enter invite code</span>
+                </div>
+              </button>
+            </>
+          )}
         </div>
 
         <div className="menu-status">

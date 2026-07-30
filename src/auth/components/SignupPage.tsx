@@ -31,6 +31,7 @@ export function SignupPage() {
         <div className="auth-card">
           <h1>Check Your Email</h1>
           <p>A confirmation link has been sent to {email}. Please check your inbox and click the link to confirm your account.</p>
+          <p>After confirming, you can login and will be redirected to join your league.</p>
           <a href="#/login" className="auth-link">Go to Login</a>
         </div>
       </div>

@@ -14,7 +14,9 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       await signIn(email, password)
-      window.location.hash = '#/'
+      const redirect = sessionStorage.getItem('join_redirect')
+      sessionStorage.removeItem('join_redirect')
+      window.location.hash = redirect ? `#${redirect}` : '#/'
     } catch (err: any) {
       setError(err.message || 'Login failed')
     } finally {
