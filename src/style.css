@@ -9,15 +9,15 @@ html, body, #app {
   height: 100%;
   overflow: hidden;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #0f0f1a;
-  color: #e0e0e0;
+  background: linear-gradient(160deg, #050a08 0%, #0a120c 30%, #0d1a10 60%, #060b08 100%);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .match-screen {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
 }
 
 .match-main {
@@ -44,8 +44,8 @@ html, body, #app {
   width: 280px;
   display: flex;
   flex-direction: column;
-  background: #1a1a2e;
-  border-left: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-left: 1px solid rgba(0, 255, 65, 0.06);
   overflow-y: auto;
   flex-shrink: 0;
 }
@@ -55,15 +55,15 @@ html, body, #app {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: #1a1a2e;
-  border-top: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
   flex-shrink: 0;
 }
 
 .ctrl-btn {
-  background: #2a2a3e;
-  color: #e0e0e0;
-  border: 1px solid #3a3a4e;
+  background: rgba(0, 255, 65, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.2);
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -72,12 +72,12 @@ html, body, #app {
 }
 
 .ctrl-btn:hover {
-  background: #3a3a4e;
+  background: rgba(0, 255, 65, 0.15);
 }
 
 .ctrl-btn.active {
-  background: #3498db;
-  border-color: #3498db;
+  background: #00ff41;
+  border-color: #00ff41;
   color: #fff;
 }
 
@@ -89,7 +89,7 @@ html, body, #app {
 
 .speed-label {
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-right: 4px;
 }
 
@@ -107,7 +107,7 @@ html, body, #app {
 
 .jump-label {
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .jump-btn {
@@ -131,14 +131,14 @@ html, body, #app {
 
 .stats-panel {
   padding: 16px;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
 }
 
 .stats-panel h3 {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 12px;
 }
 
@@ -151,7 +151,7 @@ html, body, #app {
 }
 
 .stat-label {
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
 }
 
 .stat-value {
@@ -175,7 +175,7 @@ html, body, #app {
   height: 8px;
   border-radius: 4px;
   overflow: hidden;
-  background: #2a2a3e;
+  background: rgba(0, 255, 65, 0.08);
 }
 
 .possession-fill.home {
@@ -184,7 +184,7 @@ html, body, #app {
 }
 
 .possession-fill.away {
-  background: #3498db;
+  background: #00ff41;
   transition: width 0.3s;
 }
 
@@ -197,7 +197,7 @@ html, body, #app {
 }
 
 .possession-text .home { color: #e74c3c; }
-.possession-text .away { color: #3498db; }
+.possession-text .away { color: rgba(0, 180, 255, 0.7); }
 
 .event-feed {
   flex: 1;
@@ -210,7 +210,7 @@ html, body, #app {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 12px;
 }
 
@@ -234,12 +234,12 @@ html, body, #app {
 }
 
 .event-item.shot, .event-item.shot_off_target {
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
 }
 
 .event-minute {
   font-family: monospace;
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
   white-space: nowrap;
   min-width: 30px;
 }
@@ -250,16 +250,16 @@ html, body, #app {
 
 .keybinds {
   padding: 16px;
-  border-top: 1px solid #2a2a3e;
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
   font-size: 12px;
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
 }
 
 .keybinds h4 {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 8px;
 }
 
@@ -269,21 +269,21 @@ html, body, #app {
 
 .keybinds kbd {
   display: inline-block;
-  background: #2a2a3e;
-  border: 1px solid #3a3a4e;
+  background: rgba(0, 255, 65, 0.08);
+  border: 1px solid rgba(0, 255, 65, 0.2);
   border-radius: 3px;
   padding: 1px 6px;
   font-family: monospace;
   font-size: 11px;
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.55);
   margin-right: 4px;
 }
 
 .match-bar {
   display: flex;
   padding: 10px 16px;
-  background: #1a1a2e;
-  border-top: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
 }
 
 /* ===== Main Menu — Glass Magazine / Matrix Green ===== */
@@ -589,7 +589,7 @@ html, body, #app {
 /* League Screen */
 .league-screen {
   height: 100vh;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
 }
 
 .league-layout {
@@ -606,8 +606,10 @@ html, body, #app {
 
 .league-sidebar {
   width: 320px;
-  background: #1a1a2e;
-  border-left: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(0, 255, 65, 0.08);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -619,13 +621,13 @@ html, body, #app {
   align-items: center;
   gap: 4px;
   padding: 12px 16px;
-  background: #1a1a2e;
-  border-bottom: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
 }
 
 .tab-btn {
   background: transparent;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -635,13 +637,13 @@ html, body, #app {
 }
 
 .tab-btn:hover {
-  color: #e0e0e0;
-  background: #2a2a3e;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 255, 65, 0.08);
 }
 
 .tab-btn.active {
   color: #fff;
-  background: #3498db;
+  background: #00ff41;
 }
 
 .tab-spacer {
@@ -650,8 +652,8 @@ html, body, #app {
 
 .back-btn {
   background: transparent;
-  color: #888;
-  border: 1px solid #2a2a3e;
+  color: rgba(0, 255, 65, 0.5);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -660,8 +662,8 @@ html, body, #app {
 }
 
 .back-btn:hover {
-  color: #e0e0e0;
-  border-color: #3a3a4e;
+  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 255, 65, 0.2);
 }
 
 .league-table-container {
@@ -686,7 +688,7 @@ html, body, #app {
 }
 
 .season-info {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 13px;
   margin-left: auto;
 }
@@ -704,22 +706,22 @@ html, body, #app {
 }
 
 .league-table th {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
   padding: 8px 6px;
   text-align: center;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
   position: sticky;
   top: 0;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
 }
 
 .league-table td {
   padding: 8px 6px;
   text-align: center;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.04);
 }
 
 .team-col {
@@ -741,11 +743,11 @@ html, body, #app {
 
 .pos {
   font-weight: 700;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   width: 28px;
 }
 
-.zone-ucl td:first-child { color: #3498db; }
+.zone-ucl td:first-child { color: #00bfff; }
 .zone-europa td:first-child { color: #f39c12; }
 .pts { font-weight: 700; color: #fff; font-size: 16px; }
 .gd-pos { color: #2ecc71; }
@@ -770,28 +772,28 @@ html, body, #app {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid #2a2a3e;
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
   flex-shrink: 0;
 }
 
 .progress-bar {
   flex: 1;
   height: 6px;
-  background: #2a2a3e;
+  background: rgba(0, 255, 65, 0.08);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3498db, #2ecc71);
+  background: linear-gradient(90deg, #00ff41, rgba(0, 255, 65, 0.3));
   border-radius: 3px;
   transition: width 0.3s;
 }
 
 .progress-text {
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   white-space: nowrap;
 }
 
@@ -813,7 +815,7 @@ html, body, #app {
 
 .panel-header.small h3 {
   font-size: 14px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0;
@@ -827,9 +829,9 @@ html, body, #app {
 }
 
 .week-btn {
-  background: #2a2a3e;
-  color: #e0e0e0;
-  border: 1px solid #3a3a4e;
+  background: rgba(0, 255, 65, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.2);
   padding: 4px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -856,15 +858,15 @@ html, body, #app {
 }
 
 .fixture-card {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 8px;
 }
 
 .fixture-card.played {
-  border-color: #2a2a3e;
+  border-color: rgba(0, 255, 65, 0.12);
   opacity: 0.8;
 }
 
@@ -906,7 +908,7 @@ html, body, #app {
 }
 
 .vs {
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
   font-size: 13px;
 }
 
@@ -929,7 +931,7 @@ html, body, #app {
 }
 
 .week-info {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 13px;
   margin-bottom: 16px;
 }
@@ -952,22 +954,23 @@ html, body, #app {
 }
 
 .action-btn.primary {
-  background: #3498db;
+  background: #00ff41;
   color: #fff;
 }
 
 .action-btn.primary:hover:not(:disabled) {
-  background: #2980b9;
+  background: #00cc33;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
 }
 
 .action-btn.secondary {
-  background: #2a2a3e;
-  color: #e0e0e0;
-  border: 1px solid #3a3a4e;
+  background: rgba(0, 255, 65, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.2);
 }
 
 .action-btn.secondary:hover:not(:disabled) {
-  background: #3a3a4e;
+  background: rgba(0, 255, 65, 0.15);
 }
 
 .match-list {
@@ -982,7 +985,7 @@ html, body, #app {
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -1049,7 +1052,7 @@ html, body, #app {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
 }
 
 .cup-container {
@@ -1079,11 +1082,11 @@ html, body, #app {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 12px;
   text-align: center;
   padding-bottom: 8px;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
 }
 
 .cup-matchups {
@@ -1095,14 +1098,14 @@ html, body, #app {
 }
 
 .cup-matchup {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 8px;
   padding: 10px;
 }
 
 .cup-matchup.played {
-  border-color: #3a3a4e;
+  border-color: rgba(0, 255, 65, 0.2);
 }
 
 .cup-team {
@@ -1133,7 +1136,7 @@ html, body, #app {
 
 .cup-actions {
   padding: 16px;
-  border-top: 1px solid #2a2a3e;
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1152,7 +1155,7 @@ html, body, #app {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .cup-winner {
@@ -1176,7 +1179,7 @@ html, body, #app {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3a4e;
+  background: rgba(0, 255, 65, 0.15);
   border-radius: 3px;
 }
 
@@ -1190,15 +1193,15 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  background: linear-gradient(160deg, #050a08 0%, #0a120c 50%, #060b08 100%);
 }
 
 .mp-setup-card, .mp-lobby-card {
   max-width: 560px;
   width: 100%;
   padding: 32px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 16px;
 }
 
@@ -1209,7 +1212,7 @@ html, body, #app {
 }
 
 .mp-subtitle {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 14px;
   margin-bottom: 24px;
 }
@@ -1224,32 +1227,32 @@ html, body, #app {
 .mp-input {
   flex: 1;
   min-width: 140px;
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 8px;
   padding: 10px 14px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
   outline: none;
 }
 
 .mp-input:focus {
-  border-color: #3498db;
+  border-color: #00ff41;
 }
 
 .mp-input-sm {
   width: 120px;
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 6px;
   padding: 4px 8px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 12px;
   outline: none;
 }
 
 .mp-input-sm:focus {
-  border-color: #3498db;
+  border-color: #00ff41;
 }
 
 .mp-color-picker {
@@ -1299,9 +1302,9 @@ html, body, #app {
 }
 
 .mp-btn {
-  background: #2a2a3e;
-  color: #e0e0e0;
-  border: 1px solid #3a3a4e;
+  background: rgba(0, 255, 65, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.2);
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
@@ -1311,7 +1314,7 @@ html, body, #app {
 }
 
 .mp-btn:hover:not(:disabled) {
-  background: #3a3a4e;
+  background: rgba(0, 255, 65, 0.15);
 }
 
 .mp-btn:disabled {
@@ -1320,13 +1323,14 @@ html, body, #app {
 }
 
 .mp-btn-primary {
-  background: #3498db;
-  border-color: #3498db;
+  background: #00ff41;
+  border-color: #00ff41;
   color: #fff;
 }
 
 .mp-btn-primary:hover:not(:disabled) {
-  background: #2980b9;
+  background: #00cc33;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
 .mp-btn-full {
@@ -1362,7 +1366,7 @@ html, body, #app {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 8px;
 }
 
@@ -1392,7 +1396,7 @@ html, body, #app {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   overflow: hidden;
 }
 
@@ -1401,8 +1405,8 @@ html, body, #app {
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: #1a1a2e;
-  border-bottom: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
 }
 
 .mp-creator-info {
@@ -1464,7 +1468,7 @@ html, body, #app {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 8px;
 }
 
@@ -1475,11 +1479,11 @@ html, body, #app {
 
 .mp-formation-btn {
   flex: 1;
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 10px;
   padding: 14px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   text-align: center;
   font-size: 16px;
@@ -1488,14 +1492,14 @@ html, body, #app {
 }
 
 .mp-formation-btn.active {
-  border-color: #3498db;
-  background: #1a1a2e;
+  border-color: #00ff41;
+  background: rgba(10, 25, 15, 0.85);
 }
 
 .mp-formation-desc {
   display: block;
   font-size: 11px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-weight: 400;
   margin-top: 4px;
 }
@@ -1517,14 +1521,14 @@ html, body, #app {
 .mp-draft-track {
   width: 80px;
   height: 6px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .mp-draft-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3498db, #2ecc71);
+  background: linear-gradient(90deg, #00ff41, rgba(0, 255, 65, 0.3));
   border-radius: 3px;
   transition: width 0.3s;
 }
@@ -1539,11 +1543,11 @@ html, body, #app {
   width: 360px;
   min-width: 360px;
   padding: 20px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #2a2a3e;
+  border-right: 1px solid rgba(0, 255, 65, 0.12);
 }
 
 .mp-pitch-detailed {
@@ -1721,7 +1725,7 @@ html, body, #app {
 
 .mp-draft-pitch-player.filled .mp-draft-pos-ring {
   background: rgba(52, 152, 219, 0.6);
-  border-color: #3498db;
+  border-color: #00ff41;
 }
 
 .mp-draft-pitch-player.drafting .mp-draft-pos-ring {
@@ -1792,9 +1796,9 @@ html, body, #app {
 }
 
 .mp-draft-roll-btn {
-  background: #2a2a3e;
-  border: 1px solid #3a3a4e;
-  color: #e0e0e0;
+  background: rgba(0, 255, 65, 0.08);
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  color: rgba(255, 255, 255, 0.85);
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -1804,12 +1808,12 @@ html, body, #app {
 }
 
 .mp-draft-roll-btn:hover {
-  background: #3a3a4e;
+  background: rgba(0, 255, 65, 0.15);
   border-color: #f39c12;
 }
 
 .mp-draft-no-rolls {
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
   font-size: 13px;
   font-style: italic;
 }
@@ -1824,13 +1828,13 @@ html, body, #app {
 .mp-draft-card {
   flex: 1;
   min-width: 180px;
-  background: #1a1a2e;
-  border: 2px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border: 2px solid rgba(0, 255, 65, 0.12);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
   text-align: left;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   transition: all 0.15s;
 }
 
@@ -1840,7 +1844,7 @@ html, body, #app {
 }
 
 .mp-draft-card.selected {
-  border-color: #3498db;
+  border-color: #00ff41;
   background: rgba(52, 152, 219, 0.1);
   box-shadow: 0 0 12px rgba(52,152,219,0.3);
 }
@@ -1856,7 +1860,7 @@ html, body, #app {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .mp-draft-card-ovr {
@@ -1879,7 +1883,7 @@ html, body, #app {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
   margin-bottom: 12px;
 }
 
@@ -1902,16 +1906,16 @@ html, body, #app {
   font-size: 11px;
   font-family: monospace;
   padding: 2px 6px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 3px;
 }
 
 .mp-draft-attr span:first-child {
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
 }
 
 .mp-draft-attr span:last-child {
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-weight: 600;
 }
 
@@ -1939,7 +1943,7 @@ html, body, #app {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 6px;
   font-size: 13px;
 }
@@ -1947,7 +1951,7 @@ html, body, #app {
 .mp-draft-summary-pos {
   width: 32px;
   font-weight: 700;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .mp-draft-summary-name {
@@ -1982,7 +1986,7 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  background: linear-gradient(160deg, #050a08 0%, #0a120c 50%, #060b08 100%);
   padding: 24px;
 }
 
@@ -1998,7 +2002,7 @@ html, body, #app {
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 8px;
 }
 
@@ -2021,12 +2025,12 @@ html, body, #app {
 
 .mp-lobby-team-owner {
   font-size: 12px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .mp-lobby-team-formation {
   font-size: 12px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-right: 12px;
 }
 
@@ -2038,7 +2042,7 @@ html, body, #app {
 
 .mp-lobby-settings {
   padding: 16px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 10px;
   margin-bottom: 16px;
 }
@@ -2047,7 +2051,7 @@ html, body, #app {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 12px;
 }
 
@@ -2058,11 +2062,11 @@ html, body, #app {
 }
 
 .mp-lobby-league-btn {
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 6px;
   padding: 6px 12px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -2070,8 +2074,8 @@ html, body, #app {
 }
 
 .mp-lobby-league-btn.active {
-  border-color: #3498db;
-  background: #1a1a2e;
+  border-color: #00ff41;
+  background: rgba(10, 25, 15, 0.85);
 }
 
 .mp-lobby-slider {
@@ -2082,7 +2086,7 @@ html, body, #app {
 
 .mp-lobby-slider input[type="range"] {
   flex: 1;
-  accent-color: #3498db;
+  accent-color: #00ff41;
 }
 
 .mp-lobby-slider-val {
@@ -2097,8 +2101,8 @@ html, body, #app {
   display: flex;
   gap: 8px;
   padding: 10px 16px;
-  background: #1a1a2e;
-  border-bottom: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
   flex-wrap: wrap;
 }
 
@@ -2106,8 +2110,8 @@ html, body, #app {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 12px;
@@ -2126,7 +2130,7 @@ html, body, #app {
 
 .mp-player-badge {
   display: inline-block;
-  background: #3498db;
+  background: #00ff41;
   color: #fff;
   font-size: 9px;
   font-weight: 700;
@@ -2155,7 +2159,7 @@ html, body, #app {
 }
 
 .player-match-badge.quiet {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   background: rgba(136,136,136,0.1);
 }
 
@@ -2165,7 +2169,7 @@ html, body, #app {
   justify-content: center;
   gap: 24px;
   padding: 12px 16px;
-  background: #1a1a2e;
+  background: rgba(10, 25, 15, 0.85);
   border-bottom: 1px solid #f1c40f;
   font-size: 18px;
   font-weight: 700;
@@ -2205,15 +2209,16 @@ html, body, #app {
 }
 .ol-header h1 {
   font-size: 22px;
-  color: #fff;
+  color: #00ff41;
+  text-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 .ol-season-badge {
-  background: #2a2a3e;
-  border: 1px solid #3a3a4e;
-  padding: 2px 10px;
-  border-radius: 3px;
+  background: rgba(0, 255, 65, 0.06);
+  border: 1px solid rgba(0, 255, 65, 0.15);
+  padding: 3px 12px;
+  border-radius: 6px;
   font-size: 11px;
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.55);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -2221,15 +2226,18 @@ html, body, #app {
 .ol-progress-bar {
   position: relative;
   height: 24px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 3px;
+  background: rgba(10, 25, 15, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 255, 65, 0.1);
+  border-radius: 12px;
   margin-bottom: 16px;
   overflow: hidden;
 }
 .ol-progress-fill {
   height: 100%;
-  background: #2e7d32;
+  background: linear-gradient(90deg, rgba(0, 255, 65, 0.4), #00ff41);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.15);
   transition: width 0.4s;
 }
 .ol-progress-label {
@@ -2244,8 +2252,11 @@ html, body, #app {
 }
 
 .ol-human-match-banner {
-  background: #1a3a2e;
-  border: 2px solid #2e7d32;
+  background: rgba(0, 255, 65, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  border-radius: 14px;
   padding: 14px 18px;
   margin-bottom: 16px;
   display: flex;
@@ -2253,6 +2264,7 @@ html, body, #app {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 255, 65, 0.05);
 }
 .ol-hm-content {
   display: flex;
@@ -2274,13 +2286,16 @@ html, body, #app {
   font-size: 14px;
 }
 .ol-hm-vs {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 12px;
 }
 
 .ol-error-banner {
-  background: #3a1a1a;
-  border: 1px solid #e74c3c;
+  background: rgba(60, 15, 15, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 16px;
   font-size: 13px;
@@ -2292,30 +2307,39 @@ html, body, #app {
 }
 
 .ol-info-bar {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 255, 65, 0.1);
+  border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 16px;
   font-size: 13px;
-  color: #999;
+  color: rgba(0, 255, 65, 0.5);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .ol-btn-small {
-  padding: 4px 12px;
+  padding: 5px 14px;
   font-size: 11px;
-  border: 1px solid #3a3a4e;
-  background: #2a2a3e;
-  color: #ccc;
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  background: rgba(0, 255, 65, 0.08);
+  color: rgba(0, 255, 65, 0.6);
   cursor: pointer;
-  border-radius: 2px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.ol-btn-small:hover {
+  background: rgba(0, 255, 65, 0.15);
+  border-color: rgba(0, 255, 65, 0.35);
+  color: #00ff41;
 }
 .ol-sim-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #444;
+  border: 2px solid rgba(0, 255, 65, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -2323,10 +2347,10 @@ html, body, #app {
 
 .ol-section-title {
   font-size: 15px;
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.55);
   margin-bottom: 8px;
   padding-bottom: 4px;
-  border-bottom: 1px solid #2a2a3e;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -2358,8 +2382,12 @@ html, body, #app {
   text-align: center;
   padding: 32px 16px;
   margin-bottom: 24px;
-  border: 1px solid #2a2a3e;
-  background: linear-gradient(180deg, #1a2a1e 0%, #1a1a2e 100%);
+  border: 1px solid rgba(0, 255, 65, 0.12);
+  background: rgba(10, 25, 15, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 .ol-trophy-icon {
   font-size: 48px;
@@ -2368,7 +2396,7 @@ html, body, #app {
 }
 .ol-results-trophy h2 {
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   text-transform: uppercase;
   letter-spacing: 2px;
   margin-bottom: 8px;
@@ -2384,7 +2412,7 @@ html, body, #app {
 }
 .ol-champion-pts {
   font-size: 16px;
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
 }
 
 .ol-results-list-container {
@@ -2398,8 +2426,9 @@ html, body, #app {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: #151525;
-  border: 1px solid #1e1e30;
+  background: rgba(8, 18, 12, 0.8);
+  border: 1px solid rgba(0, 255, 65, 0.06);
+  border-radius: 8px;
   font-size: 13px;
 }
 .ol-entry-champion {
@@ -2411,12 +2440,12 @@ html, body, #app {
   background: #1a222a;
 }
 .ol-entry-human {
-  border-color: #3498db;
+  border-color: #00ff41;
 }
 .ol-entry-pos {
   width: 32px;
   font-weight: 700;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 14px;
 }
 .ol-entry-champion .ol-entry-pos {
@@ -2435,7 +2464,7 @@ html, body, #app {
 .ol-entry-name {
   flex: 1;
   font-weight: 500;
-  color: #ddd;
+  color: rgba(255, 255, 255, 0.75);
 }
 .ol-entry-champion .ol-entry-name {
   color: #ffd700;
@@ -2449,13 +2478,13 @@ html, body, #app {
 }
 .ol-entry-record {
   font-size: 11px;
-  color: #777;
+  color: rgba(0, 255, 65, 0.35);
   min-width: 60px;
   text-align: right;
 }
 .ol-entry-gd {
   font-size: 12px;
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
   min-width: 30px;
   text-align: right;
 }
@@ -2469,16 +2498,16 @@ html, body, #app {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
-  border: 1px solid #2a2a3e;
+  border: 1px solid rgba(0, 255, 65, 0.12);
 }
 .ol-table th {
-  background: #1a1a2e;
+  background: rgba(10, 25, 15, 0.85);
   padding: 8px 4px;
   text-align: center;
   font-size: 10px;
   text-transform: uppercase;
-  color: #888;
-  border-bottom: 2px solid #2a2a3e;
+  color: rgba(0, 255, 65, 0.5);
+  border-bottom: 2px solid rgba(0, 255, 65, 0.12);
   letter-spacing: 0.5px;
 }
 .ol-table td {
@@ -2489,7 +2518,7 @@ html, body, #app {
 .ol-th-rank { width: 28px; }
 .ol-th-team { text-align: left; }
 .ol-th-pts { font-weight: 700; color: #ccc; }
-.ol-rank { color: #666; font-size: 10px; }
+.ol-rank { color: rgba(0, 255, 65, 0.35); font-size: 10px; }
 .ol-team-cell {
   text-align: left;
   display: flex;
@@ -2505,11 +2534,11 @@ html, body, #app {
 }
 .ol-team-name {
   font-weight: 500;
-  color: #ddd;
+  color: rgba(255, 255, 255, 0.75);
 }
 .ol-team-badge {
   font-size: 9px;
-  background: #3498db;
+  background: #00ff41;
   color: #fff;
   padding: 1px 5px;
   border-radius: 2px;
@@ -2544,16 +2573,17 @@ html, body, #app {
   align-items: center;
   justify-content: space-between;
   padding: 6px 12px;
-  background: #151525;
-  border: 1px solid #1e1e30;
+  background: rgba(8, 18, 12, 0.8);
+  border: 1px solid rgba(0, 255, 65, 0.06);
+  border-radius: 8px;
   font-size: 12px;
 }
 .ol-result-human {
   background: #1a2a1e;
-  border-color: #2e7d32;
+  border-color: #00ff41;
 }
 .ol-result-home {
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.55);
   flex: 1;
   text-align: right;
   padding-right: 10px;
@@ -2568,13 +2598,13 @@ html, body, #app {
   color: #4caf50;
 }
 .ol-result-away {
-  color: #ccc;
+  color: rgba(255, 255, 255, 0.55);
   flex: 1;
   text-align: left;
   padding-left: 10px;
 }
 .ol-empty {
-  color: #666;
+  color: rgba(0, 255, 65, 0.35);
   font-size: 13px;
   padding: 20px;
   text-align: center;
@@ -2588,9 +2618,9 @@ html, body, #app {
 
 .ol-btn {
   padding: 10px 24px;
-  border: 2px solid #2a2a3e;
-  background: #1a1a2e;
-  color: #ccc;
+  border: 2px solid rgba(0, 255, 65, 0.12);
+  background: rgba(10, 25, 15, 0.85);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 13px;
   cursor: pointer;
   border-radius: 2px;
@@ -2602,15 +2632,15 @@ html, body, #app {
   color: #fff;
 }
 .ol-btn-play {
-  background: #2e7d32;
-  border-color: #2e7d32;
+  background: #00ff41;
+  border-color: #00ff41;
   color: #fff;
 }
 .ol-btn-play:hover {
   background: #388e3c;
 }
 .ol-btn-back {
-  border-color: #3a3a4e;
+  border-color: rgba(0, 255, 65, 0.2);
 }
 
 @keyframes spin {
@@ -2622,7 +2652,7 @@ html, body, #app {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   overflow: hidden;
 }
 
@@ -2632,8 +2662,8 @@ html, body, #app {
   justify-content: center;
   gap: 16px;
   padding: 16px 24px;
-  background: #1a1a2e;
-  border-bottom: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
 }
 
 .llm-team {
@@ -2641,7 +2671,7 @@ html, body, #app {
   align-items: center;
   gap: 12px;
   padding: 8px 20px;
-  border: 2px solid #2a2a3e;
+  border: 2px solid rgba(0, 255, 65, 0.12);
   border-radius: 10px;
   min-width: 140px;
 }
@@ -2665,7 +2695,7 @@ html, body, #app {
 
 .llm-vs-text {
   font-size: 18px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -2685,9 +2715,9 @@ html, body, #app {
   align-items: flex-start;
   gap: 10px;
   padding: 8px 12px;
-  background: #1a1a2e;
+  background: rgba(10, 25, 15, 0.85);
   border-radius: 6px;
-  border-left: 3px solid #2a2a3e;
+  border-left: 3px solid rgba(0, 255, 65, 0.12);
   font-size: 14px;
   animation: slideIn 0.3s ease-out;
 }
@@ -2703,7 +2733,7 @@ html, body, #app {
 }
 
 .llm-event.llm-break {
-  border-left-color: #3498db;
+  border-left-color: rgba(0, 180, 255, 0.7);
   background: rgba(52, 152, 219, 0.08);
 }
 
@@ -2720,14 +2750,14 @@ html, body, #app {
 .llm-minute {
   font-family: monospace;
   font-weight: 700;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   min-width: 36px;
   font-size: 13px;
 }
 
 .llm-desc {
   flex: 1;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.4;
 }
 
@@ -2737,7 +2767,7 @@ html, body, #app {
 }
 
 .llm-kickoff {
-  border-left-color: #888;
+  border-left-color: rgba(0, 255, 65, 0.5);
   background: rgba(136,136,136,0.05);
   font-style: italic;
 }
@@ -2778,8 +2808,8 @@ html, body, #app {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: #1a1a2e;
-  border-top: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
   flex-shrink: 0;
 }
 
@@ -2801,7 +2831,7 @@ html, body, #app {
 .llm-loading-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #2a2a3e;
+  border: 4px solid rgba(0, 255, 65, 0.12);
   border-top-color: #9b59b6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -2812,7 +2842,7 @@ html, body, #app {
 }
 
 .llm-loading p {
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 16px;
 }
 
@@ -2872,12 +2902,12 @@ html, body, #app {
   animation: scaleUp 0.6s ease-out 0.3s both;
 }
 
-.match-end-goal.home { color: #3498db; }
+.match-end-goal.home { color: rgba(0, 180, 255, 0.7); }
 .match-end-goal.away { color: #e74c3c; }
 
 .match-end-dash {
   font-size: 56px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   animation: fadeIn 0.4s ease-out 0.5s both;
 }
 
@@ -2889,7 +2919,7 @@ html, body, #app {
   animation: slideUp 0.5s ease-out 0.6s both;
 }
 
-.match-end-result.home-win { color: #3498db; }
+.match-end-result.home-win { color: rgba(0, 180, 255, 0.7); }
 .match-end-result.away-win { color: #e74c3c; }
 .match-end-result.draw { color: #f1c40f; }
 
@@ -2945,7 +2975,7 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  background: linear-gradient(160deg, #050a08 0%, #0a120c 50%, #060b08 100%);
   padding: 20px;
 }
 
@@ -2953,9 +2983,12 @@ html, body, #app {
   max-width: 480px;
   width: 100%;
   padding: 28px 24px;
-  background: #1a1a2e;
-  border: 2px solid #2a2a3e;
-  border-radius: 8px;
+  background: rgba(10, 25, 15, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.12);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(0, 255, 65, 0.06);
 }
 
 .auth-card h1 {
@@ -2966,31 +2999,31 @@ html, body, #app {
 
 .auth-card p {
   font-size: 14px;
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
   margin-bottom: 16px;
   line-height: 1.5;
 }
 
 .auth-card input, .auth-card select {
   width: 100%;
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 8px;
   padding: 12px 14px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
   outline: none;
   margin-bottom: 12px;
 }
 
 .auth-card input:focus, .auth-card select:focus {
-  border-color: #3498db;
+  border-color: #00ff41;
 }
 
 .auth-card button {
   width: 100%;
   padding: 12px 20px;
-  background: #3498db;
+  background: #00ff41;
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -3002,7 +3035,8 @@ html, body, #app {
 }
 
 .auth-card button:hover:not(:disabled) {
-  background: #2980b9;
+  background: #00cc33;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
 .auth-card button:disabled {
@@ -3017,13 +3051,14 @@ html, body, #app {
 }
 
 .auth-link {
-  color: #646cff !important;
+  color: #00ff41 !important;
   text-decoration: underline;
   cursor: pointer;
 }
 
 .auth-link:hover {
-  color: #7c8cff !important;
+  color: #00ff41 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
 }
 
 .form-field {
@@ -3033,19 +3068,19 @@ html, body, #app {
 .form-field label {
   display: block;
   font-size: 13px;
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
   margin-bottom: 6px;
 }
 
 .form-field input[type="range"] {
   width: 100%;
-  accent-color: #3498db;
+  accent-color: #00ff41;
 }
 
 .btn-small {
-  background: #2a2a3e;
-  border: 1px solid #3a3a4e;
-  color: #e0e0e0;
+  background: rgba(0, 255, 65, 0.08);
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  color: rgba(255, 255, 255, 0.85);
   padding: 4px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -3054,13 +3089,13 @@ html, body, #app {
 }
 
 .btn-small:hover {
-  background: #3a3a4e;
+  background: rgba(0, 255, 65, 0.15);
 }
 
 .btn-secondary {
   background: transparent;
-  border: 1px solid #3a3a4e;
-  color: #888;
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  color: rgba(0, 255, 65, 0.5);
 }
 
 /* Loading Screen */
@@ -3070,28 +3105,28 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   gap: 16px;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #2a2a3e;
-  border-top-color: #3498db;
+  border: 4px solid rgba(0, 255, 65, 0.12);
+  border-top-color: rgba(0, 180, 255, 0.7);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 .loading-screen p {
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   font-size: 14px;
 }
 
 /* Invite Link */
 .invite-link-card {
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 20px;
@@ -3101,13 +3136,13 @@ html, body, #app {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 8px;
 }
 
 .invite-link-card p {
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   margin-bottom: 10px;
 }
 
@@ -3118,11 +3153,11 @@ html, body, #app {
 
 .invite-link-input {
   flex: 1;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
+  background: rgba(10, 25, 15, 0.85);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 6px;
   padding: 8px 12px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   font-family: monospace;
   outline: none;
@@ -3157,7 +3192,7 @@ html, body, #app {
 
 .league-type {
   font-size: 13px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 16px;
@@ -3176,9 +3211,9 @@ html, body, #app {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 8px;
-  border-left: 4px solid #2a2a3e;
+  border-left: 4px solid rgba(0, 255, 65, 0.12);
 }
 
 .member-name {
@@ -3189,12 +3224,12 @@ html, body, #app {
 
 .member-team {
   font-size: 13px;
-  color: #aaa;
+  color: rgba(0, 255, 65, 0.45);
 }
 
 .member-status {
   font-size: 12px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .owner-badge {
@@ -3218,7 +3253,7 @@ html, body, #app {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #0f0f1a;
+  background: rgba(5, 12, 8, 0.95);
   border-radius: 8px;
 }
 
@@ -3234,11 +3269,11 @@ html, body, #app {
 
 .edit-team input {
   flex: 1;
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
+  background: rgba(5, 12, 8, 0.95);
+  border: 1px solid rgba(0, 255, 65, 0.12);
   border-radius: 6px;
   padding: 8px 12px;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
   outline: none;
 }
@@ -3334,7 +3369,7 @@ html, body, #app {
   .league-sidebar {
     width: 100%;
     border-left: none;
-    border-top: 1px solid #2a2a3e;
+    border-top: 1px solid rgba(0, 255, 65, 0.06);
     max-height: 50vh;
   }
 
@@ -3450,7 +3485,7 @@ html, body, #app {
     min-width: unset;
     padding: 12px;
     border-right: none;
-    border-bottom: 1px solid #2a2a3e;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.06);
     max-height: 300px;
   }
 
@@ -3620,8 +3655,8 @@ html, body, #app {
     display: block;
     width: 100%;
     padding: 10px;
-    background: #2a2a3e;
-    border: 1px solid #3a3a4e;
+    background: rgba(0, 255, 65, 0.08);
+    border: 1px solid rgba(0, 255, 65, 0.2);
     color: #fff;
     cursor: pointer;
     text-align: center;
@@ -3652,7 +3687,7 @@ html, body, #app {
     max-height: 100%;
     padding: 12px;
     border: none;
-    background: #0f0f1a;
+    background: rgba(5, 12, 8, 0.95);
     z-index: 100;
     display: flex;
     align-items: center;
@@ -3675,7 +3710,7 @@ html, body, #app {
     max-height: 200px;
     padding: 8px;
     border-right: none;
-    border-bottom: 1px solid #2a2a3e;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.06);
   }
   .mp-draft-panel-col {
     overflow: visible;
