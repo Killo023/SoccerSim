@@ -279,6 +279,16 @@ DO $$ BEGIN
   CREATE POLICY "Members can insert match results" ON matches FOR INSERT WITH CHECK (
     is_league_member(league_id, auth.uid())
   );
+
+  DROP POLICY IF EXISTS "Members can update matches" ON matches;
+  CREATE POLICY "Members can update matches" ON matches FOR UPDATE USING (
+    is_league_member(league_id, auth.uid())
+  );
+
+  DROP POLICY IF EXISTS "Members can update their league" ON leagues;
+  CREATE POLICY "Members can update their league" ON leagues FOR UPDATE USING (
+    is_league_member(id, auth.uid())
+  );
 END $$;
 
 -- 5. AUTO-PROFILE TRIGGER
