@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../../auth/context/useAuth'
 import { getLeague, getLeagueMembers } from '../api/leagues'
 import { getDraftPicks } from '../api/draft'
-import { getLeagueMatches, saveMatchResult, updateMatchResult, getMatchById } from '../api/matches'
+import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
 import { generateLLMMatch } from '../../match/engine/LLMSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
 import { LLMMatchView } from '../../match/components/LLMMatchView'
-import { LEAGUES, type LeagueDefinition } from '../../league/data/clubs'
-import { type TeamData, type TeamSide, type Position } from '../../match/types'
-import { supabase } from '../../supabase/client'
+import { LEAGUES } from '../../league/data/clubs'
+import type { TeamData, TeamSide, Position } from '../../match/types'
 import type { League, LeagueMember, MatchRecord } from '../../supabase/types'
 import type { DraftPick } from '../../supabase/types'
 import type { Club } from '../../league/types'
+import { supabase } from '../../supabase/client'
 
 interface DraftTeam {
   memberId: string
@@ -85,13 +85,15 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   const [simulating, setSimulating] = useState(false)
   const [botClubs, setBotClubs] = useState<Club[]>([])
 
-  const [watchMatchId, setWatchMatchId] = useState<string | null>(null)
   const [watchData, setWatchData] = useState<{
     homeTeam: TeamData; awayTeam: TeamData
     events: any[]; llmEvents: any[]
     homeGoals: number; awayGoals: number
     matchId: string
   } | null>(null)
+
+  const simulatingRef = useRef(false)
+  const loadedRef = useRef(false)
 
   async function load() {
     const [l, m, picks, existing] = await Promise.all([
@@ -118,15 +120,13 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
     if (!l) { setLoading(false); return }
 
-    if (existing.length === 0) {
-      const leagueDef = LEAGUES.find(def => def.id === l.league_type)
-      const usedNames = new Set(ht.map(t => t.teamName))
-      const bots = (leagueDef?.clubs || []).filter(c => !usedNames.has(c.name))
-      setBotClubs(bots)
+    const leagueDef = LEAGUES.find(def => def.id === l.league_type)
+    const usedNames = new Set(ht.map(t => t.teamName))
+    const bots = (leagueDef?.clubs || []).filter(c => !usedNames.has(c.name))
+    setBotClubs(bots)
 
+    if (existing.length === 0 && bots.length > 0) {
       const allTeamNames = [...ht.map(t => t.teamName), ...bots.map(b => b.name)]
-      if (allTeamNames.length < 2) { setLoading(false); return }
-
       const schedule = generateDoubleRoundRobin(allTeamNames)
       const fixtures: any[] = []
       for (let w = 0; w < schedule.length; w++) {
@@ -156,19 +156,26 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         setMatches(refreshed)
       }
     }
+
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [leagueId])
+  useEffect(() => {
+    if (!loadedRef.current) {
+      loadedRef.current = true
+      load()
+    }
+  }, [leagueId])
 
   useEffect(() => {
-    if (!loading && matches.length > 0 && league) {
-      autoSimulate()
+    if (!loading && matches.length > 0 && league && !simulatingRef.current) {
+      runAutoSimulate()
     }
   }, [loading, matches.length, league?.current_week])
 
-  async function autoSimulate() {
-    if (!league || simulating) return
+  async function runAutoSimulate() {
+    if (!league || simulatingRef.current) return
+    simulatingRef.current = true
     setSimulating(true)
 
     let currentWeek = league.current_week || 1
@@ -184,23 +191,27 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
       const hasHumanMatch = weekMatches.some(m => m.home_member_id && m.away_member_id)
 
-      if (!hasHumanMatch) {
-        await simulateWeek(weekMatches)
-        currentWeek++
-        advanced = true
-      } else if (weekMatches.some(m => m.home_member_id && m.away_member_id && m.status === 'pending')) {
+      if (hasHumanMatch) {
         setSimulating(false)
+        simulatingRef.current = false
         return
-      } else {
-        currentWeek++
       }
+
+      await simulateWeek(weekMatches)
+      await advanceLeagueWeek(leagueId)
+      currentWeek++
+      advanced = true
     }
 
     if (advanced) {
       const refreshed = await getLeagueMatches(leagueId)
       setMatches(refreshed)
+      const refreshedL = await getLeague(leagueId)
+      setLeague(refreshedL)
     }
+
     setSimulating(false)
+    simulatingRef.current = false
   }
 
   async function simulateWeek(weekMatches: MatchRecord[]) {
@@ -212,9 +223,9 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       if (match.home_member_id) {
         const ht = humanTeams.find(t => t.memberId === match.home_member_id)
         if (!ht || ht.players.length < 11) continue
-        homeData = draftPicksToTeamData(ht.players, match.home_team_name, '', 'home')
+        homeData = draftPicksToTeamData(ht.players, match.home_team_name, ht.teamColor, 'home')
       } else {
-        const club = allClubs.find(c => c.name === match.home_team_name) || botClubs.find(c => c.name === match.home_team_name)
+        const club = allClubs.find(c => c.name === match.home_team_name)
         if (!club) continue
         homeData = clubToTeamData(club, 'home')
       }
@@ -222,9 +233,9 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       if (match.away_member_id) {
         const at = humanTeams.find(t => t.memberId === match.away_member_id)
         if (!at || at.players.length < 11) continue
-        awayData = draftPicksToTeamData(at.players, match.away_team_name, '', 'away')
+        awayData = draftPicksToTeamData(at.players, match.away_team_name, at.teamColor, 'away')
       } else {
-        const club = allClubs.find(c => c.name === match.away_team_name) || botClubs.find(c => c.name === match.away_team_name)
+        const club = allClubs.find(c => c.name === match.away_team_name)
         if (!club) continue
         awayData = clubToTeamData(club, 'away')
       }
@@ -283,8 +294,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         awayGoals: result.awayGoals,
         matchId: humanMatch.id,
       })
-    } catch (err: any) {
-      console.error('LLM match failed, using FastSimulator fallback:', err)
+    } catch {
       const result = fastSimulate(homeTeam, awayTeam)
       await updateMatchResult(humanMatch.id, {
         home_goals: result.homeGoals,
@@ -303,30 +313,15 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     }
   }
 
-  async function handleSimulateAllRemaining() {
-    if (!league || simulating) return
-    setSimulating(true)
-
-    const allClubs = [...botClubs]
-    let currentWeek = (league.current_week || 1)
-    const totalWeeks = matches.length > 0 ? Math.max(...matches.map(m => m.week_number)) : 38
-
-    for (let w = currentWeek; w <= totalWeeks; w++) {
-      const weekMatches = matches.filter(m => m.week_number === w && m.status === 'pending')
-      const hasHumanMatch = weekMatches.some(m => m.home_member_id && m.away_member_id)
-      if (hasHumanMatch) break
-      await simulateWeek(weekMatches)
-    }
-
-    const refreshed = await getLeagueMatches(leagueId)
-    setMatches(refreshed)
-    setSimulating(false)
-  }
-
-  function handleMatchFinish() {
+  async function handleMatchFinish() {
     setWatchData(null)
-    setWatchMatchId(null)
-    load()
+    if (!league) return
+
+    await advanceLeagueWeek(leagueId)
+    const refreshedL = await getLeague(leagueId)
+    setLeague(refreshedL)
+    const refreshedM = await getLeagueMatches(leagueId)
+    setMatches(refreshedM)
   }
 
   const botTeamNames = botClubs.map(c => c.name)
@@ -335,7 +330,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
 
   const pending = matches.filter(m => m.week_number === currentWeek && m.status === 'pending')
   const hasHumanMatch = pending.some(m => m.home_member_id && m.away_member_id)
-  const allTeams = [...humanTeams.map(t => ({ name: t.teamName, color: t.teamColor, isHuman: true })), ...botClubs.map(c => ({ name: c.name, color: c.color, isHuman: false }))]
+  const allTeams = [
+    ...humanTeams.map(t => ({ name: t.teamName, color: t.teamColor, isHuman: true })),
+    ...botClubs.map(c => ({ name: c.name, color: c.color, isHuman: false })),
+  ]
 
   const standings = allTeams.map(team => {
     const teamMatches = matches.filter(m => (m.home_team_name === team.name || m.away_team_name === team.name) && m.status === 'finished')
@@ -367,85 +365,110 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Loading league...</p></div>
   if (!league) return <div className="auth-page"><div className="auth-card"><p>League not found</p></div></div>
 
+  const progress = totalWeeks > 0 ? Math.round((currentWeek / totalWeeks) * 100) : 0
+
   return (
-    <div className="auth-page">
-      <div className="auth-card" style={{ maxWidth: 900 }}>
+    <div className="online-league-page">
+      <div className="ol-header">
         <h1>{league.name}</h1>
-        <p className="league-type">Season Simulator</p>
+        <span className="ol-season-badge">Season 1</span>
+      </div>
 
-        {hasHumanMatch && (
-          <div style={{ background: '#1a3a2e', border: '1px solid #27ae60', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-            <h3 style={{ margin: '0 0 8px' }}>⚔ Human vs Human Match This Week!</h3>
-            {pending.filter(m => m.home_member_id && m.away_member_id).map(m => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <strong>{m.home_team_name}</strong>
-                <span>vs</span>
-                <strong>{m.away_team_name}</strong>
-              </div>
-            ))}
-            <button onClick={handlePlayMatch} className="btn-primary" style={{ marginTop: 8 }}>
-              Play Match (AI Commentary)
-            </button>
+      <div className="ol-progress-bar">
+        <div className="ol-progress-fill" style={{ width: `${Math.min(progress, 100)}%` }} />
+        <span className="ol-progress-label">Week {currentWeek} of {totalWeeks}</span>
+      </div>
+
+      {hasHumanMatch && (
+        <div className="ol-human-match-banner">
+          <div className="ol-hm-content">
+            <span className="ol-hm-icon">⚔</span>
+            <div className="ol-hm-teams">
+              {pending.filter(m => m.home_member_id && m.away_member_id).map(m => (
+                <span key={m.id} className="ol-hm-pair">
+                  <strong>{m.home_team_name}</strong>
+                  <span className="ol-hm-vs">vs</span>
+                  <strong>{m.away_team_name}</strong>
+                </span>
+              ))}
+            </div>
           </div>
-        )}
+          <button onClick={handlePlayMatch} className="ol-btn ol-btn-play">
+            Play Match (AI Commentary)
+          </button>
+        </div>
+      )}
 
-        {!hasHumanMatch && (
-          <div style={{ marginBottom: 16 }}>
-            <p>Week {currentWeek} of {totalWeeks} — auto-simulating (no human match this week)</p>
-            {pending.length > 0 && (
-              <button onClick={handleSimulateAllRemaining} disabled={simulating} className="btn-primary" style={{ marginTop: 8 }}>
-                {simulating ? 'Simulating...' : 'Simulate Weeks'}
-              </button>
-            )}
-          </div>
-        )}
+      {!hasHumanMatch && (
+        <div className="ol-info-bar">
+          {simulating ? (
+            <span className="ol-sim-spinner" />
+          ) : (
+            <span>Week {currentWeek} — auto-simulating...</span>
+          )}
+        </div>
+      )}
 
-        <h2>Standings</h2>
-        <table className="league-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 13 }}>
+      <div className="ol-standings-section">
+        <h2 className="ol-section-title">Standings</h2>
+        <table className="ol-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Team</th>
-              <th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
+              <th className="ol-th-rank">#</th>
+              <th className="ol-th-team">Team</th>
+              <th>P</th><th>W</th><th>D</th><th>L</th>
+              <th>GF</th><th>GA</th><th>GD</th>
+              <th className="ol-th-pts">Pts</th>
             </tr>
           </thead>
           <tbody>
             {standings.map((s, i) => (
-              <tr key={s.name} style={{ background: s.isHuman ? '#1a1a3e' : undefined }}>
-                <td>{i + 1}</td>
-                <td style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', backgroundColor: s.color }} />
-                  {s.name}
-                  {s.isHuman && <small style={{ color: '#888' }}>(you)</small>}
+              <tr key={s.name} className={s.isHuman ? 'ol-row-human' : ''}>
+                <td className="ol-rank">{i + 1}</td>
+                <td className="ol-team-cell">
+                  <span className="ol-team-dot" style={{ backgroundColor: s.color }} />
+                  <span className="ol-team-name">{s.name}</span>
+                  {s.isHuman && <span className="ol-team-badge">YOU</span>}
                 </td>
                 <td>{s.played}</td>
-                <td>{s.wins}</td>
-                <td>{s.draws}</td>
-                <td>{s.losses}</td>
+                <td className="ol-stat-win">{s.wins}</td>
+                <td className="ol-stat-draw">{s.draws}</td>
+                <td className="ol-stat-loss">{s.losses}</td>
                 <td>{s.gf}</td>
                 <td>{s.ga}</td>
-                <td>{s.gd > 0 ? '+' : ''}{s.gd}</td>
-                <td><strong>{s.pts}</strong></td>
+                <td className={s.gd > 0 ? 'ol-stat-pos' : s.gd < 0 ? 'ol-stat-neg' : ''}>{s.gd > 0 ? '+' : ''}{s.gd}</td>
+                <td className="ol-pts"><strong>{s.pts}</strong></td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
 
-        <h2>Recent Matches</h2>
-        {matches.filter(m => m.status === 'finished').slice(-10).reverse().map(m => (
-          <div key={m.id} className="fixture-card" style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', marginBottom: 3, background: '#1a1a2e', borderRadius: 4, fontSize: 13 }}>
-            <span>{m.home_team_name}</span>
-            <strong>{m.home_goals} - {m.away_goals}</strong>
-            <span>{m.away_team_name}</span>
-          </div>
-        ))}
-        {matches.filter(m => m.status === 'finished').length === 0 && <p>No matches played yet.</p>}
-
-        <div style={{ marginTop: 20 }}>
-          <button onClick={() => { window.location.hash = `#/league/${leagueId}` }} className="btn-secondary">
-            Back to Lobby
-          </button>
+      <div className="ol-fixtures-section">
+        <h2 className="ol-section-title">Recent Results</h2>
+        <div className="ol-results-list">
+          {matches.filter(m => m.status === 'finished').slice(-15).reverse().map(m => {
+            const isHumanMatch = m.home_member_id && m.away_member_id
+            return (
+              <div key={m.id} className={`ol-result-row ${isHumanMatch ? 'ol-result-human' : ''}`}>
+                <span className="ol-result-home">{m.home_team_name}</span>
+                <span className={`ol-result-score ${isHumanMatch ? 'ol-score-human' : ''}`}>
+                  {m.home_goals} - {m.away_goals}
+                </span>
+                <span className="ol-result-away">{m.away_team_name}</span>
+              </div>
+            )
+          })}
+          {matches.filter(m => m.status === 'finished').length === 0 && (
+            <p className="ol-empty">No matches played yet.</p>
+          )}
         </div>
+      </div>
+
+      <div className="ol-footer">
+        <button onClick={() => { window.location.hash = `#/league/${leagueId}` }} className="ol-btn ol-btn-back">
+          ← Back to Lobby
+        </button>
       </div>
     </div>
   )

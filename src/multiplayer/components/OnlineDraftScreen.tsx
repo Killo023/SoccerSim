@@ -42,6 +42,7 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
   const [currentSlotIdx, setCurrentSlotIdx] = useState(0)
   const [options, setOptions] = useState<DraftPlayer[]>([])
   const [selectedPlayer, setSelectedPlayer] = useState<DraftPlayer | null>(null)
+  const [showPitch, setShowPitch] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -261,8 +262,11 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
         </div>
       </div>
 
+      <button className="mobile-pitch-toggle" onClick={() => setShowPitch(true)}>Show Pitch</button>
+
       <div className="mp-draft-body">
-        <div className="mp-draft-pitch-col">
+        <div className={`mp-draft-pitch-col ${showPitch ? 'mobile-pitch-show' : 'mobile-pitch-hide'}`}>
+          <button className="mobile-pitch-close" onClick={() => setShowPitch(false)}>✕ Close Pitch</button>
           <div className="mp-pitch-detailed">
             <div className="mp-pitch-grass" />
             <div className="mp-pitch-line mp-pitch-boundary" />

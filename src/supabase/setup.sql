@@ -195,6 +195,15 @@ AS $$
   UPDATE public.leagues SET status = p_status WHERE id = p_league_id;
 $$;
 
+-- Advance league current_week
+CREATE OR REPLACE FUNCTION advance_league_week(p_league_id UUID)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.leagues SET current_week = COALESCE(current_week, 0) + 1 WHERE id = p_league_id;
+$$;
+
 -- Check if all members have completed drafts
 CREATE OR REPLACE FUNCTION all_drafts_complete(p_league_id UUID)
 RETURNS BOOLEAN

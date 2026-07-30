@@ -41,9 +41,5 @@ export async function getWeekMatches(leagueId: string, week: number): Promise<Ma
 }
 
 export async function advanceLeagueWeek(leagueId: string): Promise<void> {
-  const { data: league } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
-  if (!league) return
-  const current = (league as any).current_week ?? 0
-  await supabase.rpc('update_league_status', { p_league_id: leagueId, p_status: 'active' })
-  await supabase.from('leagues').update({ current_week: current + 1 }).eq('id', leagueId)
+  await supabase.rpc('advance_league_week', { p_league_id: leagueId })
 }
