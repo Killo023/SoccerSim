@@ -103,6 +103,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         getDraftPicks(leagueId),
         getLeagueMatches(leagueId),
       ])
+      leagueRef.current = l
       setLeague(l)
 
       const ht: DraftTeam[] = m.map(member => {

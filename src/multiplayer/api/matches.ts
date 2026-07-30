@@ -22,6 +22,7 @@ export async function getLeagueMatches(leagueId: string): Promise<MatchRecord[]>
     .eq('league_id', leagueId)
     .order('week_number')
     .order('created_at')
+    .limit(5000)
   return (data ?? []) as MatchRecord[]
 }
 
