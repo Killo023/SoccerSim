@@ -130,4 +130,31 @@ DO $$ BEGIN
   CREATE POLICY "Members can insert match results" ON matches FOR INSERT WITH CHECK (
     is_league_member(league_id, auth.uid())
   );
+
+  DROP POLICY IF EXISTS "Members can update matches" ON matches;
+  CREATE POLICY "Members can update matches" ON matches FOR UPDATE USING (
+    is_league_member(league_id, auth.uid())
+  );
+
+  DROP POLICY IF EXISTS "Members can update their league" ON leagues;
+  CREATE POLICY "Members can update their league" ON leagues FOR UPDATE USING (
+    is_league_member(id, auth.uid())
+  );
 END $$;
+
+-- 5. RPC functions (must recreate if already exists)
+CREATE OR REPLACE FUNCTION advance_league_week(p_league_id UUID)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.leagues SET current_week = current_week + 1 WHERE id = p_league_id;
+$$;
+
+CREATE OR REPLACE FUNCTION update_match_result(p_match_id UUID, p_home_goals INT, p_away_goals INT, p_home_shots INT, p_away_shots INT, p_home_shots_on_target INT, p_away_shots_on_target INT, p_home_possession INT, p_status TEXT, p_commentary TEXT DEFAULT NULL)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.matches SET home_goals = p_home_goals, away_goals = p_away_goals, home_shots = p_home_shots, away_shots = p_away_shots, home_shots_on_target = p_home_shots_on_target, away_shots_on_target = p_away_shots_on_target, home_possession = p_home_possession, status = p_status, commentary = COALESCE(p_commentary, commentary), played_at = NOW() WHERE id = p_match_id AND status = 'pending';
+$$;
