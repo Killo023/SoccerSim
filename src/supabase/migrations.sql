@@ -110,6 +110,9 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- Leagues (references league_members which now exists)
+CREATE POLICY "Anyone can look up leagues by invite code" ON leagues
+  FOR SELECT USING (true);
+
 CREATE POLICY "League members can view their leagues" ON leagues
   FOR SELECT USING (
     auth.uid() = owner_id OR
