@@ -2181,6 +2181,19 @@ html, body, #app {
   font-size: 12px;
 }
 
+.ol-error-banner {
+  background: #3a1a1a;
+  border: 1px solid #e74c3c;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #e88;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .ol-info-bar {
   background: #1a1a2e;
   border: 1px solid #2a2a3e;
@@ -2191,6 +2204,16 @@ html, body, #app {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.ol-btn-small {
+  padding: 4px 12px;
+  font-size: 11px;
+  border: 1px solid #3a3a4e;
+  background: #2a2a3e;
+  color: #ccc;
+  cursor: pointer;
+  border-radius: 2px;
 }
 .ol-sim-spinner {
   width: 16px;
