@@ -461,6 +461,21 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         if (humanMatch) {
           const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
           if (!dbM || dbM.status !== 'finished') {
+            const humans = humanTeamsRef.current
+            const ht = humans.find(t => t.memberId === humanMatch.home_member_id)
+            const at = humans.find(t => t.memberId === humanMatch.away_member_id)
+            if (ht && at && ht.players.length >= 11 && at.players.length >= 11) {
+              setSimulating(false)
+              const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
+              const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
+              playingRef.current = true
+              setPhysicsMatch({
+                homeTeam, awayTeam,
+                matchId: humanMatch.id,
+                homeMemberId: humanMatch.home_member_id!,
+                awayMemberId: humanMatch.away_member_id!,
+              })
+            }
             break
           }
         }
@@ -576,6 +591,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       const rl2 = await getLeague(leagueId)
       leagueRef.current = rl2
       setLeague(rl2)
+    }
+
+    if (!allFin) {
+      runAutoSimulate()
     }
   }
 
@@ -696,7 +715,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         </div>
       )}
 
-      {hasHumanMatch && (
+      {hasHumanMatch && !physicsMatch && (
         <div className="ol-human-match-banner">
           <div className="ol-hm-content">
             <span className="ol-hm-icon">⚔</span>
@@ -710,9 +729,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
               ))}
             </div>
           </div>
-          <button onClick={handlePlayMatch} className="ol-btn ol-btn-play">
-            Play Match
-          </button>
+          <span className="ol-hm-auto-label">Match starting...</span>
         </div>
       )}
 
