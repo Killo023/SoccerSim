@@ -9,11 +9,20 @@ export function JoinLeaguePage({ inviteCode }: { inviteCode: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [joining, setJoining] = useState(false)
+  const [lookupFailed, setLookupFailed] = useState(false)
 
   useEffect(() => {
+    setLoading(true)
+    setLookupFailed(false)
+    setError('')
     getLeagueByInviteCode(inviteCode).then(l => {
+      if (!l) setLookupFailed(true)
       setLeague(l)
       setLoading(false)
+    }).catch((err: Error) => {
+      setError('Failed to look up league: ' + (err.message || 'unknown error'))
+      setLoading(false)
+      setLookupFailed(true)
     })
   }, [inviteCode])
 
@@ -22,8 +31,8 @@ export function JoinLeaguePage({ inviteCode }: { inviteCode: string }) {
     setError('')
     setJoining(true)
     try {
-      await joinLeague(inviteCode, user.id)
-      window.location.hash = `#/league/${league.id}`
+      const result = await joinLeague(inviteCode, user.id)
+      window.location.hash = `#/league/${result.id}`
     } catch (err: any) {
       setError(err.message || 'Failed to join league')
     } finally {
@@ -41,14 +50,15 @@ export function JoinLeaguePage({ inviteCode }: { inviteCode: string }) {
     window.location.hash = '#/signup'
   }
 
-  if (loading) return <div className="auth-page"><div className="auth-card"><p>Looking up invite...</p></div></div>
+  if (loading) return <div className="loading-screen"><div className="spinner" /><p>Looking up invite...</p></div>
 
-  if (!league) {
+  if (lookupFailed || !league) {
     return (
       <div className="auth-page">
         <div className="auth-card">
           <h1>Invalid Invite</h1>
-          <p>This invite code is not valid. It may have expired or the league was deleted.</p>
+          <p>The invite code <strong>{inviteCode}</strong> is not valid. It may have expired or the league was deleted.</p>
+          {error && <p className="auth-error">{error}</p>}
           <a href="#/" className="auth-link">Back to menu</a>
         </div>
       </div>

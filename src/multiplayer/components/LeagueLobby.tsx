@@ -14,15 +14,23 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
   const [loading, setLoading] = useState(true)
   const [allDrafted, setAllDrafted] = useState(false)
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   async function load() {
-    const [l, m] = await Promise.all([getLeague(leagueId), getLeagueMembers(leagueId)])
-    setLeague(l)
-    setMembers(m)
-    const myMember = m.find(member => member.profile_id === user?.id)
-    if (myMember) setTeamName(myMember.team_name)
-    if (l && l.status === 'drafting') {
-      const done = await allDraftsComplete(leagueId)
-      setAllDrafted(done)
+    try {
+      const [l, m] = await Promise.all([getLeague(leagueId), getLeagueMembers(leagueId)])
+      if (!l) { setLoadError('League not found'); setLoading(false); return }
+      setLeague(l)
+      setMembers(m)
+      const myMember = m.find(member => member.profile_id === user?.id)
+      if (myMember) setTeamName(myMember.team_name)
+      if (l && l.status === 'drafting') {
+        const done = await allDraftsComplete(leagueId)
+        setAllDrafted(done)
+      }
+      setLoadError(null)
+    } catch (err: any) {
+      setLoadError(err.message || 'Failed to load league')
     }
     setLoading(false)
   }
@@ -50,6 +58,21 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
   }
 
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Loading league...</p></div>
+
+  if (loadError) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <h1>Error Loading League</h1>
+          <p className="auth-error">{loadError}</p>
+          <p style={{ fontSize: 12, color: '#666' }}>Make sure you have run the latest SQL setup in Supabase. Check console for details.</p>
+          <button onClick={() => { setLoadError(null); setLoading(true); load() }}>Retry</button>
+          <a href="#/" className="auth-link" style={{ display: 'block', textAlign: 'center', marginTop: 8 }}>Back to menu</a>
+        </div>
+      </div>
+    )
+  }
+
   if (!league) return <div className="auth-page"><div className="auth-card"><p>League not found</p></div></div>
 
   return (
