@@ -2470,13 +2470,6 @@ html, body, #app {
 .ol-score-human {
   color: #4caf50;
 }
-.ol-score-pending {
-  color: #888;
-  font-size: 13px;
-}
-.ol-result-finished {
-  opacity: 0.7;
-}
 .ol-result-away {
   color: #ccc;
   flex: 1;
