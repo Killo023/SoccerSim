@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/useAuth'
 
 export function SignupPage() {
-  const { signUp } = useAuth()
+  const { signUp, user } = useAuth()
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -10,6 +10,15 @@ export function SignupPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [confirmSent, setConfirmSent] = useState(false)
+
+  // If already logged in after signup, redirect to saved path or home
+  useEffect(() => {
+    if (user && confirmSent) {
+      const redirect = sessionStorage.getItem('join_redirect')
+      sessionStorage.removeItem('join_redirect')
+      window.location.hash = redirect ? `#${redirect}` : '#/'
+    }
+  }, [user, confirmSent])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -29,10 +38,10 @@ export function SignupPage() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1>Check Your Email</h1>
-          <p>A confirmation link has been sent to {email}. Please check your inbox and click the link to confirm your account.</p>
-          <p>After confirming, you can login and will be redirected to join your league.</p>
-          <a href="#/login" className="auth-link">Go to Login</a>
+          <h1>Account Created</h1>
+          <p>You are now logged in. Redirecting to your league...</p>
+          {!user && <p>A confirmation link has been sent to {email}. Please check your inbox and click the link to confirm your account.</p>}
+          {!user && <a href="#/login" className="auth-link">Go to Login</a>}
         </div>
       </div>
     )
