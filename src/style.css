@@ -286,35 +286,84 @@ html, body, #app {
   border-top: 1px solid #2a2a3e;
 }
 
-/* Main Menu */
+/* ===== Main Menu — Glass Magazine / Matrix Green ===== */
+
+@keyframes matrixPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes matrixScan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
 .main-menu {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  min-height: 100vh;
+  background: linear-gradient(160deg, #050a08 0%, #0a120c 30%, #0d1a10 60%, #060b08 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.main-menu::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0, 255, 65, 0.03) 40px, rgba(0, 255, 65, 0.03) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0, 255, 65, 0.03) 40px, rgba(0, 255, 65, 0.03) 41px);
+  pointer-events: none;
+}
+
+.main-menu::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00ff41, #00ff41, transparent);
+  animation: matrixPulse 3s ease-in-out infinite;
 }
 
 .menu-content {
+  position: relative;
   text-align: center;
-  max-width: 480px;
+  max-width: 500px;
   width: 100%;
-  padding: 40px 20px;
+  padding: 48px 32px;
+  margin: 24px;
+  background: rgba(10, 25, 15, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 255, 65, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(0, 255, 65, 0.08),
+    0 0 60px rgba(0, 255, 65, 0.03);
 }
 
 .menu-title h1 {
-  font-size: 42px;
-  color: #fff;
-  margin-bottom: 4px;
+  font-size: 46px;
+  font-weight: 800;
+  color: #00ff41;
+  margin-bottom: 2px;
   letter-spacing: -1px;
+  text-shadow: 0 0 30px rgba(0, 255, 65, 0.3), 0 0 60px rgba(0, 255, 65, 0.1);
+  font-family: 'Georgia', serif;
 }
 
 .subtitle {
-  color: #888;
-  font-size: 16px;
+  color: rgba(0, 255, 65, 0.5);
+  font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 4px;
-  margin-bottom: 24px;
+  letter-spacing: 6px;
+  margin-bottom: 28px;
+  font-weight: 300;
 }
 
 .league-selector {
@@ -326,26 +375,27 @@ html, body, #app {
   display: flex;
   align-items: center;
   width: 100%;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 10px;
-  padding: 12px 16px;
-  color: #e0e0e0;
+  background: rgba(0, 255, 65, 0.04);
+  border: 1px solid rgba(0, 255, 65, 0.15);
+  border-radius: 14px;
+  padding: 14px 18px;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
   gap: 8px;
 }
 
 .league-select-btn:hover {
-  border-color: #3498db;
-  background: #2a2a3e;
+  border-color: rgba(0, 255, 65, 0.4);
+  background: rgba(0, 255, 65, 0.08);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.05);
 }
 
 .league-select-label {
-  font-size: 11px;
-  color: #888;
+  font-size: 10px;
+  color: rgba(0, 255, 65, 0.5);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   display: block;
   text-align: left;
 }
@@ -353,15 +403,16 @@ html, body, #app {
 .league-select-name {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: #00ff41;
   display: block;
   text-align: left;
   flex: 1;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.15);
 }
 
 .league-select-arrow {
   font-size: 12px;
-  color: #888;
+  color: rgba(0, 255, 65, 0.4);
 }
 
 .league-dropdown {
@@ -369,13 +420,15 @@ html, body, #app {
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 10px;
+  margin-top: 6px;
+  background: rgba(5, 15, 8, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 255, 65, 0.15);
+  border-radius: 14px;
   overflow: hidden;
   z-index: 100;
-  max-height: 300px;
+  max-height: 260px;
   overflow-y: auto;
 }
 
@@ -387,11 +440,11 @@ html, body, #app {
   padding: 12px 16px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #2a2a3e;
-  color: #e0e0e0;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s;
+  transition: background 0.2s;
 }
 
 .league-option:last-child {
@@ -399,12 +452,14 @@ html, body, #app {
 }
 
 .league-option:hover {
-  background: #2a2a3e;
+  background: rgba(0, 255, 65, 0.06);
+  color: #00ff41;
 }
 
 .league-option.active {
-  background: #2a2a3e;
-  border-left: 3px solid #3498db;
+  background: rgba(0, 255, 65, 0.08);
+  border-left: 3px solid #00ff41;
+  color: #00ff41;
 }
 
 .league-option-name {
@@ -415,51 +470,79 @@ html, body, #app {
 
 .league-option-region {
   font-size: 12px;
-  color: #888;
+  color: rgba(255, 255, 255, 0.35);
   flex: 1;
 }
 
 .league-option-count {
   font-size: 11px;
-  color: #666;
+  color: rgba(0, 255, 65, 0.4);
 }
 
 .menu-buttons {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .menu-btn {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 12px;
-  padding: 20px;
-  color: #e0e0e0;
+  background: rgba(0, 255, 65, 0.04);
+  border: 1px solid rgba(0, 255, 65, 0.12);
+  border-radius: 16px;
+  padding: 18px 22px;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   text-align: left;
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 255, 65, 0.05) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.menu-btn:hover::before {
+  opacity: 1;
 }
 
 .menu-btn:hover {
-  background: #2a2a3e;
-  border-color: #3498db;
-  transform: translateY(-1px);
+  border-color: rgba(0, 255, 65, 0.4);
+  background: rgba(0, 255, 65, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 255, 65, 0.08), inset 0 1px 0 rgba(0, 255, 65, 0.1);
+}
+
+.menu-btn:active {
+  transform: translateY(0);
 }
 
 .menu-btn.primary {
-  border-color: #3498db;
+  border-color: rgba(0, 255, 65, 0.3);
+  background: rgba(0, 255, 65, 0.07);
+}
+
+.menu-btn.primary:hover {
+  border-color: #00ff41;
+  background: rgba(0, 255, 65, 0.12);
+  box-shadow: 0 8px 40px rgba(0, 255, 65, 0.15), 0 0 60px rgba(0, 255, 65, 0.05);
 }
 
 .menu-icon {
-  font-size: 32px;
-  width: 48px;
+  font-size: 28px;
+  width: 44px;
   text-align: center;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 65, 0.15));
 }
 
 .menu-btn-text {
@@ -470,23 +553,37 @@ html, body, #app {
 
 .menu-btn-title {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
+  letter-spacing: 0.3px;
 }
 
 .menu-btn-desc {
-  font-size: 13px;
-  color: #888;
+  font-size: 12px;
+  color: rgba(0, 255, 65, 0.5);
+  letter-spacing: 0.2px;
+}
+
+.menu-btn:hover .menu-btn-desc {
+  color: rgba(0, 255, 65, 0.7);
 }
 
 .menu-status {
-  color: #666;
-  font-size: 13px;
+  color: rgba(0, 255, 65, 0.3);
+  font-size: 12px;
+  letter-spacing: 0.5px;
 }
 
 .menu-status .progress-bar {
   margin-top: 8px;
-  height: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(0, 255, 65, 0.06);
+}
+
+.menu-status .progress-fill {
+  background: linear-gradient(90deg, rgba(0, 255, 65, 0.3), #00ff41);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
 }
 
 /* League Screen */
@@ -3166,18 +3263,43 @@ html, body, #app {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 20px;
-  font-size: 14px;
-  color: #aaa;
+  font-size: 13px;
+  color: rgba(0, 255, 65, 0.5);
 }
 
 .auth-status strong {
-  color: #fff;
+  color: #00ff41;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.15);
 }
 
 .auth-status .btn-small {
   margin-left: 8px;
+  background: rgba(0, 255, 65, 0.08);
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  color: rgba(0, 255, 65, 0.7);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-status .btn-small:hover {
+  background: rgba(0, 255, 65, 0.15);
+  border-color: rgba(0, 255, 65, 0.4);
+  color: #00ff41;
+}
+
+.auth-link {
+  color: rgba(0, 255, 65, 0.5);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-link:hover {
+  color: #00ff41;
 }
 
 /* ===== Mobile Responsive ===== */
@@ -3226,16 +3348,18 @@ html, body, #app {
   }
 
   .menu-content {
-    padding: 20px 16px;
+    padding: 32px 20px;
+    margin: 16px;
+    border-radius: 20px;
   }
 
   .menu-title h1 {
-    font-size: 28px;
+    font-size: 32px;
   }
 
   .subtitle {
-    font-size: 13px;
-    letter-spacing: 2px;
+    font-size: 12px;
+    letter-spacing: 4px;
   }
 
   .menu-btn {
@@ -3248,7 +3372,7 @@ html, body, #app {
   }
 
   .menu-btn-title {
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .menu-btn-desc {
@@ -3571,13 +3695,25 @@ html, body, #app {
     min-width: 45px;
   }
 
+  .menu-content {
+    padding: 24px 14px;
+    margin: 12px;
+    border-radius: 16px;
+  }
+
   .menu-title h1 {
-    font-size: 22px;
+    font-size: 26px;
+  }
+
+  .subtitle {
+    font-size: 10px;
+    letter-spacing: 3px;
   }
 
   .menu-btn {
     padding: 12px;
     gap: 10px;
+    border-radius: 12px;
   }
 
   .menu-icon {
@@ -3586,7 +3722,7 @@ html, body, #app {
   }
 
   .menu-btn-title {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .menu-btn-desc {
