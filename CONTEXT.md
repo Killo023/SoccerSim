@@ -38,7 +38,8 @@ src/
 │   │   ├── MatchSimulator.ts  # Wrapper for MatchEngine
 │   │   ├── FastSimulator.ts   # Headless batch simulation (no canvas)
 │   │   ├── TeamConverter.ts   # Club → TeamData conversion
-│   │   └── LLMSimulator.ts    # Calls https://mlvoca.com/api/generate (tinyllama) for AI commentary
+│   │   ├── LLMSimulator.ts    # Calls https://mlvoca.com/api/generate (tinyllama) for AI commentary
+│   │   └── rng.ts            # Seeded deterministic PRNG (mulberry32) for cross-device result consistency
 │   ├── renderer/
 │   │   ├── MatchRenderer.ts   # Orchestrates rendering + scoreboard/clock HUD
 │   │   ├── PitchRenderer.ts   # Pitch lines, goals, penalty areas, center circle
@@ -96,8 +97,9 @@ npm run build  # Production build
 - Ball physics: friction, boundary/goal collision
 - Match events: goals, shots on/off target, out-of-play (goal kick/corner)
 - Possession tracking, stats panel, event feed
-- Speed controls (1x/2x/4x), pause/play
+- Speed controls (0.5x/1x/2x/4x), pause/play (functional in OnlineMatchView)
 - Jump-in player control: click player → WASD/E/Q, J to jump out
+- **Deterministic PRNG** (mulberry32, seeded from match ID): both players see identical results across all devices
 
 ### Match Engine Fixes (July 2026)
 The following bugs were fixed in the physics engine to resolve the "22 players cluster in one spot" issue:
@@ -119,7 +121,19 @@ The following bugs were fixed in the physics engine to resolve the "22 players c
 
 The engine should now produce realistic spread and continuous ball movement with players attacking the correct goal.
 
-### Friends League (Multiplayer)
+### Online League (Friends League 2.0)
+- League creation with invite code, online sync via Supabase (RLS-protected)
+- Auto-simulates AI weeks in the background; pauses automatically when it's your human-vs-human matchup
+- **Auto-popup 2D match**: when the sim reaches your vs-friend week, the real-time physics canvas opens automatically (no button press needed)
+- Both players see the **same deterministic result** (seeded PRNG based on match ID — identical goals, shots, possession on every device)
+- Match result is saved once and never overwritten by a second player
+- Speed controls (0.5x/1x/2x/4x) for the 2D match view
+- Manual refresh button and 2s polling for live data sync
+- League auto-advances weeks after match finishes
+- 20 total teams per league (dynamic bot count based on human player count)
+- Bot teams filtered by league type (e.g., EPL bots for Premier League league)
+
+### Friends League (Legacy — Local Pass-and-Play)
 - Add 2-6 players with colors
 - **Draft system**: Each player picks 11 real players from the game's 135+ clubs
   - 3 random options per position slot, unlimited rolls
@@ -130,7 +144,7 @@ The engine should now produce realistic spread and continuous ball movement with
 - League running: Replace bottom N AI clubs with custom teams
 - **Smart Fast-Forward**: Auto-simulates non-player weeks at 5 weeks/sec
 - Player-vs-player matches: two viewing modes
-  - **Watch** (physics canvas — still buggy, players cluster and ball gets stuck)
+  - **Watch** (physics canvas)
   - **AI Commentary** (LLM-generated play-by-play via mlvoca.com/tinyllama)
 
 ### AI Commentary (LLM)
@@ -147,14 +161,18 @@ The engine should now produce realistic spread and continuous ball movement with
 - The "22 players cluster in one spot" bug was the main physics engine issue. Multiple root causes were fixed in the July 2026 update (see "Match Engine Fixes" above). The engine should now produce realistic spread and continuous ball movement with players attacking the correct goal.
 - If clustering still occurs, next debugging step: add console.log tracing of AI state machine transitions to identify remaining edge cases.
 - AI Commentary (LLM) mode remains available as an alternative.
+- Match engine results are now deterministic across devices (seeded mulberry32 PRNG based on match ID). Both players see identical goals, shots, and possession.
+
+### Online League
+- The `claim_match` RPC does not exist on the Supabase database; `handlePlayMatch` opens the 2D match directly without DB claiming. Result is saved when the match finishes. The second player to finish sees the match is already finished and does not overwrite.
+- Auto-sim race condition: both players' browsers independently run auto-sim. The `advanceLeagueWeek` call uses `expectedWeek` guard to prevent double-advancing, and the auto-sim re-syncs from DB when the week jumps ahead.
 
 ### Other
 - (none reported)
 
 ## Next Steps (Suggested)
-1. Fix any remaining physics engine clustering issue (or replace with LLM-only simulation)
-2. Add goal scorer tracking / player stats persistence across league season
-3. Add save/load (localStorage serialization)
-4. Add substitution/formation editing during match
-5. Add yellow/red card system
-6. Mobile responsive layout
+1. Add goal scorer tracking / player stats persistence across league season
+2. Add save/load (localStorage serialization)
+3. Add substitution/formation editing during match
+4. Add yellow/red card system
+5. Mobile responsive layout improvements (sidebar stacking)
