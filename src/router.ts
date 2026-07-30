@@ -15,6 +15,7 @@ function parseHash(): RouteInfo {
   if (parts[0] === 'join' && parts[1]) return { page: 'join', params: { code: parts[1] } }
   if (parts[0] === 'league' && parts[1]) return { page: 'league', params: { id: parts[1] } }
   if (parts[0] === 'draft' && parts[1]) return { page: 'draft', params: { id: parts[1] } }
+  if (parts[0] === 'online-league' && parts[1]) return { page: 'online-league', params: { id: parts[1] } }
   return { page: 'menu', params: {} }
 }
 

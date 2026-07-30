@@ -100,7 +100,7 @@ export function LeagueLobby({ leagueId }: { leagueId: string }) {
 
         {league.status === 'active' && (
           <div className="league-actions">
-            <button onClick={() => { window.location.hash = '#/' }}>View League Table</button>
+            <button onClick={() => { window.location.hash = `#/online-league/${league.id}` }}>View League Table</button>
           </div>
         )}
       </div>

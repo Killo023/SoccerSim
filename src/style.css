@@ -2413,3 +2413,765 @@ html, body, #app {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
 }
+
+/* ===== Auth Pages ===== */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+  padding: 20px;
+}
+
+.auth-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 32px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 16px;
+}
+
+.auth-card h1 {
+  font-size: 28px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.auth-card p {
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.auth-card input, .auth-card select {
+  width: 100%;
+  background: #0f0f1a;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+.auth-card input:focus, .auth-card select:focus {
+  border-color: #3498db;
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 12px 20px;
+  background: #3498db;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 12px;
+}
+
+.auth-card button:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.auth-card button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.auth-error {
+  color: #e74c3c !important;
+  font-size: 13px !important;
+  margin-bottom: 12px !important;
+}
+
+.auth-link {
+  color: #646cff !important;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.auth-link:hover {
+  color: #7c8cff !important;
+}
+
+.form-field {
+  margin-bottom: 12px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.form-field input[type="range"] {
+  width: 100%;
+  accent-color: #3498db;
+}
+
+.btn-small {
+  background: #2a2a3e;
+  border: 1px solid #3a3a4e;
+  color: #e0e0e0;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.btn-small:hover {
+  background: #3a3a4e;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #3a3a4e;
+  color: #888;
+}
+
+/* Loading Screen */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #0f0f1a;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #2a2a3e;
+  border-top-color: #3498db;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-screen p {
+  color: #888;
+  font-size: 14px;
+}
+
+/* Invite Link */
+.invite-link-card {
+  background: #0f0f1a;
+  border: 1px solid #2a2a3e;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.invite-link-card h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.invite-link-card p {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.invite-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-link-input {
+  flex: 1;
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e0e0e0;
+  font-size: 13px;
+  font-family: monospace;
+  outline: none;
+  min-width: 0;
+}
+
+.invite-copy-btn {
+  background: #27ae60 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+.invite-copy-btn:hover {
+  background: #2ecc71 !important;
+}
+
+/* League Lobby */
+.league-lobby h2 {
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 12px;
+  margin-top: 20px;
+}
+
+.league-type {
+  font-size: 13px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.member-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.member-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #0f0f1a;
+  border-radius: 8px;
+  border-left: 4px solid #2a2a3e;
+}
+
+.member-name {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+}
+
+.member-team {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.member-status {
+  font-size: 12px;
+  color: #888;
+}
+
+.owner-badge {
+  display: inline-block;
+  background: #f39c12;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.team-settings {
+  margin-bottom: 16px;
+}
+
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #0f0f1a;
+  border-radius: 8px;
+}
+
+.team-info span {
+  flex: 1;
+  font-weight: 600;
+}
+
+.edit-team {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-team input {
+  flex: 1;
+  background: #0f0f1a;
+  border: 1px solid #2a2a3e;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+}
+
+.edit-team button {
+  width: auto !important;
+  margin: 0 !important;
+  padding: 8px 16px !important;
+}
+
+.league-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.league-actions button {
+  flex: 1;
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.auth-status strong {
+  color: #fff;
+}
+
+.auth-status .btn-small {
+  margin-left: 8px;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+  html, body, #app {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .match-sidebar {
+    display: none;
+  }
+
+  .match-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .match-controls .jump-controls {
+    margin-left: 0;
+  }
+
+  .match-controls .restart-btn {
+    margin-left: 0;
+  }
+
+  .league-layout {
+    flex-direction: column;
+  }
+
+  .league-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #2a2a3e;
+    max-height: 50vh;
+  }
+
+  .league-tabs {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .tab-spacer {
+    display: none;
+  }
+
+  .menu-content {
+    padding: 20px 16px;
+  }
+
+  .menu-title h1 {
+    font-size: 28px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+
+  .menu-btn {
+    padding: 14px 16px;
+  }
+
+  .menu-icon {
+    font-size: 24px;
+    width: 36px;
+  }
+
+  .menu-btn-title {
+    font-size: 15px;
+  }
+
+  .menu-btn-desc {
+    font-size: 12px;
+  }
+
+  .league-table {
+    font-size: 12px;
+  }
+
+  .league-table th,
+  .league-table td {
+    padding: 6px 4px;
+  }
+
+  .form-cell {
+    gap: 1px;
+  }
+
+  .form-badge {
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 8px;
+  }
+
+  .fixture-card {
+    padding: 10px;
+  }
+
+  .fixture-team {
+    font-size: 12px;
+  }
+
+  .score {
+    font-size: 15px;
+  }
+
+  .cup-bracket {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .cup-round {
+    min-width: unset;
+  }
+
+  .cup-matchups {
+    gap: 6px;
+  }
+
+  .auth-card {
+    padding: 24px 20px;
+  }
+
+  .auth-card h1 {
+    font-size: 22px;
+  }
+
+  .mp-setup-card, .mp-lobby-card, .auth-card {
+    padding: 24px 16px;
+  }
+
+  .mp-title {
+    font-size: 24px;
+  }
+
+  .mp-draft-body {
+    flex-direction: column;
+  }
+
+  .mp-draft-pitch-col {
+    width: 100%;
+    min-width: unset;
+    padding: 12px;
+    border-right: none;
+    border-bottom: 1px solid #2a2a3e;
+    max-height: 300px;
+  }
+
+  .mp-draft-options {
+    flex-direction: column;
+  }
+
+  .mp-draft-card {
+    min-width: unset;
+  }
+
+  .mp-creation-body {
+    padding: 16px;
+  }
+
+  .mp-formation-options {
+    flex-wrap: wrap;
+  }
+
+  .mp-formation-btn {
+    min-width: 100px;
+  }
+
+  .member-list li {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .invite-link-row {
+    flex-direction: column;
+  }
+
+  .invite-link-input {
+    width: 100%;
+  }
+
+  .invite-copy-btn {
+    width: 100% !important;
+  }
+
+  .llm-scoreboard {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .llm-team {
+    min-width: 100px;
+    padding: 6px 12px;
+  }
+
+  .llm-team-score {
+    font-size: 24px;
+  }
+
+  .llm-team-name {
+    font-size: 13px;
+  }
+
+  .llm-feed {
+    padding: 12px 16px;
+  }
+
+  .mp-lobby {
+    padding: 16px;
+  }
+
+  .mp-player-row {
+    flex-wrap: wrap;
+  }
+
+  .league-selector {
+    margin-bottom: 16px;
+  }
+
+  .league-option-name {
+    min-width: 100px;
+    font-size: 13px;
+  }
+
+  .league-option-region {
+    font-size: 11px;
+  }
+
+  .league-option-count {
+    display: none;
+  }
+
+  .season-progress {
+    flex-wrap: wrap;
+  }
+
+  .progress-text {
+    font-size: 11px;
+  }
+
+  .week-nav {
+    flex-wrap: wrap;
+  }
+
+  .week-label {
+    min-width: 60px;
+    font-size: 12px;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+  }
+
+  .panel-header h2 {
+    font-size: 17px;
+  }
+
+  .mp-lobby-settings {
+    padding: 12px;
+  }
+
+  .mp-draft-pick-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mini-fixture {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .mini-teams {
+    flex-wrap: wrap;
+  }
+
+  .mp-add-row {
+    flex-direction: column;
+  }
+
+  .mp-input {
+    width: 100%;
+  }
+
+  .match-end-ft {
+    font-size: 28px;
+    letter-spacing: 4px;
+  }
+
+  .match-end-goal {
+    font-size: 48px;
+  }
+
+  .match-end-dash {
+    font-size: 36px;
+  }
+
+  .match-end-result {
+    font-size: 18px;
+  }
+
+  .llm-controls {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-title h1 {
+    font-size: 22px;
+  }
+
+  .menu-btn {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .menu-icon {
+    font-size: 20px;
+    width: 28px;
+  }
+
+  .menu-btn-title {
+    font-size: 13px;
+  }
+
+  .menu-btn-desc {
+    font-size: 11px;
+  }
+
+  .league-table {
+    font-size: 10px;
+  }
+
+  .league-table th,
+  .league-table td {
+    padding: 4px 2px;
+  }
+
+  .team-name {
+    font-size: 11px;
+  }
+
+  .pos {
+    width: 20px;
+  }
+
+  .pts {
+    font-size: 13px;
+  }
+
+  .season-info {
+    font-size: 11px;
+  }
+
+  .fixture-team {
+    font-size: 11px;
+  }
+
+  .score {
+    font-size: 13px;
+  }
+
+  .fixture-score {
+    min-width: 40px;
+  }
+
+  .action-btn {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .sidebar-actions h3 {
+    font-size: 15px;
+  }
+
+  .week-info {
+    font-size: 12px;
+  }
+
+  .mp-title {
+    font-size: 20px;
+  }
+
+  .mp-subtitle {
+    font-size: 12px;
+  }
+
+  .mp-lobby-team-name {
+    font-size: 12px;
+  }
+
+  .mp-lobby-team-formation {
+    font-size: 10px;
+  }
+
+  .mp-lobby-team-rating {
+    font-size: 11px;
+  }
+
+  .llm-team {
+    min-width: 80px;
+    padding: 4px 8px;
+  }
+
+  .llm-team-score {
+    font-size: 20px;
+  }
+
+  .llm-team-name {
+    font-size: 11px;
+  }
+
+  .llm-vs-text {
+    font-size: 14px;
+  }
+
+  .llm-event {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}

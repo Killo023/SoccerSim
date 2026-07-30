@@ -15,6 +15,7 @@ import { LeagueScreen } from './league/components/LeagueScreen'
 import { CupScreen } from './league/components/CupScreen'
 import { MatchScreen } from './match/components/MatchScreen'
 import { PlayerSetup } from './multiplayer/components/PlayerSetup'
+import { OnlineLeagueScreen } from './multiplayer/components/OnlineLeagueScreen'
 import { TeamCreationScreen } from './multiplayer/components/TeamCreationScreen'
 import { MultiplayerLobby } from './multiplayer/components/MultiplayerLobby'
 import { MultiplayerLeagueScreen } from './multiplayer/components/MultiplayerLeagueScreen'
@@ -60,6 +61,8 @@ function AppContent() {
       return <ProtectedRoute><LeagueLobby leagueId={route.params.id} /></ProtectedRoute>
     case 'draft':
       return <ProtectedRoute>{(user) ? <TeamCreationScreen /> : null}</ProtectedRoute>
+    case 'online-league':
+      return <ProtectedRoute><OnlineLeagueScreen leagueId={route.params.id} /></ProtectedRoute>
   }
 
   if (view === 'multiplayer') {
