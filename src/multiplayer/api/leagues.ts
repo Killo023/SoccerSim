@@ -94,20 +94,38 @@ export async function getLeagueByInviteCode(code: string): Promise<League | null
 }
 
 export async function getLeagueMembers(leagueId: string): Promise<(LeagueMember & { profile: { username: string; display_name: string } })[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('league_members')
-    .select('*, profile:profiles!inner(username, display_name)')
+    .select('*')
     .eq('league_id', leagueId)
-  return (data ?? []) as any
+  if (error) throw error
+  const members = (data ?? []) as LeagueMember[]
+  const enriched = await Promise.all(members.map(async (m) => {
+    try {
+      const p = await supabase.from('profiles').select('username, display_name').eq('id', m.profile_id).single()
+      return { ...m, profile: p.data ?? { username: '?', display_name: '?' } }
+    } catch {
+      return { ...m, profile: { username: '?', display_name: '?' } }
+    }
+  }))
+  return enriched as any
 }
 
 export async function getUserLeagues(profileId: string): Promise<(League & { member: LeagueMember })[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('league_members')
-    .select('*, league:leagues!inner(*)')
+    .select('*')
     .eq('profile_id', profileId)
-  if (!data) return []
-  return (data as any[]).map(d => ({ ...d.league, member: d }))
+  if (error) throw error
+  const members = (data ?? []) as LeagueMember[]
+  const enriched = await Promise.all(members.map(async (m) => {
+    try {
+      const l = await supabase.from('leagues').select('*').eq('id', m.league_id).single()
+      if (l.data) return { ...l.data as League, member: m }
+    } catch { /* ignore */ }
+    return null as any
+  }))
+  return enriched.filter(Boolean)
 }
 
 export async function updateLeagueStatus(leagueId: string, status: League['status']): Promise<void> {
