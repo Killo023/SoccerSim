@@ -927,7 +927,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         homeTeam={pvpMatch.homeTeam}
         awayTeam={pvpMatch.awayTeam}
         replay
-        onFinish={() => setShowReplay(false)}
+        onFinish={handlePvPFinish}
       />
     )
   }

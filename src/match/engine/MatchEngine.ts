@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid'
-import { MatchState, TeamData, Player, MatchStats, TeamSide, Ball } from '../types'
+import { MatchState, TeamData, Player, MatchStats, TeamSide, Ball, Position } from '../types'
 import {
   PITCH_LENGTH, PITCH_WIDTH, PHYSICS_DT, AI_THINK_INTERVAL, HALF_TIME, GOAL_WIDTH
 } from '../constants'
@@ -24,7 +24,7 @@ function createInitialStats(): MatchStats {
 
 function cloneTeamPlayers(team: TeamData): Player[] {
   return team.players.map((p, i) => {
-    const pos = getFormationPos(i, team.side)
+    const pos = getFormationPos(i, team.side, team.formation)
     return { ...p, x: pos.x, y: pos.y, targetX: pos.x, targetY: pos.y, hasBall: false, isControlled: false }
   })
 }
@@ -43,9 +43,13 @@ export class MatchEngine {
   private cooldownTimer = 0
   private cooldownReason: 'goal' | 'out' | null = null
   private started = false
+  private homeFormation: Position[]
+  private awayFormation: Position[]
 
   constructor(config: MatchConfig) {
     this.onStateUpdate = config.onStateUpdate
+    this.homeFormation = config.homeTeam.formation
+    this.awayFormation = config.awayTeam.formation
     const players = [
       ...cloneTeamPlayers(config.homeTeam),
       ...cloneTeamPlayers(config.awayTeam),
@@ -108,7 +112,8 @@ export class MatchEngine {
           if (player.isControlled) continue
           const teamPlayers = this.state.players.filter(p => p.team === player.team)
           const formationIx = teamPlayers.findIndex(p => p.id === player.id)
-          const fp = getFormationPos(Math.max(0, formationIx), player.team)
+          const formation = player.team === 'home' ? this.homeFormation : this.awayFormation
+          const fp = getFormationPos(Math.max(0, formationIx), player.team, formation)
           const dx = fp.x - player.x; const dy = fp.y - player.y
           const dist = Math.hypot(dx, dy)
           if (dist < 0.5) continue
@@ -161,7 +166,7 @@ export class MatchEngine {
     if (this.aiThinkTimer >= AI_THINK_INTERVAL) {
       this.aiThinkTimer = 0
       for (const player of this.state.players) {
-        runPlayerAI(player, this.state.ball, this.state.players, player.team, AI_THINK_INTERVAL, this.aiTimers, this.state.clock, this.state.stats, this.state.events)
+        runPlayerAI(player, this.state.ball, this.state.players, player.team, AI_THINK_INTERVAL, this.aiTimers, this.state.clock, this.state.stats, this.state.events, player.team === 'home' ? this.homeFormation : this.awayFormation)
       }
     }
 
@@ -278,7 +283,8 @@ export class MatchEngine {
       if (player.isControlled) continue
       const teamPlayers = this.state.players.filter(p => p.team === player.team)
       const formationIx = teamPlayers.findIndex(p => p.id === player.id)
-      const fp = getFormationPos(Math.max(0, formationIx), player.team)
+      const formation = player.team === 'home' ? this.homeFormation : this.awayFormation
+      const fp = getFormationPos(Math.max(0, formationIx), player.team, formation)
       const dx = fp.x - player.x; const dy = fp.y - player.y
       const dist = Math.hypot(dx, dy)
       if (dist < 0.5) continue

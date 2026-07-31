@@ -1,4 +1,4 @@
-import { Player, Ball, Vec2, TeamSide, MatchStats, MatchEvent } from '../types'
+import { Player, Ball, Vec2, TeamSide, MatchStats, MatchEvent, Position } from '../types'
 import {
   PITCH_LENGTH, PITCH_WIDTH, PLAYER_SPEED, KEEPER_SPEED,
   PASS_DISTANCE_MAX, GOAL_WIDTH, SHOOT_DISTANCE_MAX,
@@ -11,17 +11,53 @@ export function getPlayerSpeed(p: Player): number {
   return p.position === 'GK' ? KEEPER_SPEED : PLAYER_SPEED * (0.7 + 0.3 * p.attrs.pace / 100)
 }
 
-export function getFormationPos(i: number, side: TeamSide): Vec2 {
-  if (side === 'home') {
-    if (i === 0) return { x: PITCH_WIDTH / 2, y: PITCH_LENGTH - 3 }
-    const xs = [12, 35, 65, 88, 10, 35, 65, 90, 40, 60]
-    const ys = [80, 84, 84, 80, 58, 55, 55, 58, 25, 25]
-    return { x: xs[i - 1] ?? 50, y: ys[i - 1] ?? 50 }
-  }
-  if (i === 0) return { x: PITCH_WIDTH / 2, y: 3 }
-  const xs = [88, 65, 35, 12, 90, 65, 35, 10, 60, 40]
-  const ys = [20, 16, 16, 20, 42, 45, 45, 42, 75, 75]
-  return { x: xs[i - 1] ?? 50, y: ys[i - 1] ?? 50 }
+/** Which horizontal "line" of the formation a position sits in (home rows). */
+const FORMATION_ROW: Record<Position, number> = {
+  GK: 0, LB: 1, CB: 1, RB: 1, CDM: 2, CM: 2, CAM: 3, LM: 3, RM: 3, LW: 4, RW: 4, ST: 4,
+}
+
+/** Preferred horizontal anchor per position — used to order players inside a row. */
+const LEFT_WIDE: Position[] = ['LB', 'LM', 'LW']
+const RIGHT_WIDE: Position[] = ['RB', 'RM', 'RW']
+
+/** Home defensive-to-attacking y for each row. */
+const ROW_Y_HOME: Record<number, number> = {
+  0: PITCH_LENGTH - 3,
+  1: PITCH_LENGTH * 0.82,
+  2: PITCH_LENGTH * 0.60,
+  3: PITCH_LENGTH * 0.45,
+  4: PITCH_LENGTH * 0.22,
+}
+
+const DEFAULT_FORMATION: Position[] = ['GK', 'LB', 'CB', 'CB', 'RB', 'LM', 'CM', 'CM', 'RM', 'ST', 'ST']
+
+/** Horizontal x (0..PITCH_WIDTH) for a player in a given formation row. */
+function rowX(slots: Position[], row: number, i: number): number {
+  const rowSlots = slots
+    .map((pos, idx) => ({ pos, idx }))
+    .filter(e => (FORMATION_ROW[e.pos] ?? 2) === row)
+  const mine = rowSlots.find(e => e.idx === i)
+  if (!mine) return PITCH_WIDTH / 2
+  const left = rowSlots.filter(e => LEFT_WIDE.includes(e.pos))
+  const right = rowSlots.filter(e => RIGHT_WIDE.includes(e.pos))
+  const center = rowSlots.filter(e => !LEFT_WIDE.includes(e.pos) && !RIGHT_WIDE.includes(e.pos))
+  if (left.includes(mine)) return 6 + left.indexOf(mine) * 14
+  if (right.includes(mine)) return 62 - right.indexOf(mine) * 14
+  const leftBound = left.length > 0 ? 6 + left.length * 14 + 6 : 14
+  const rightBound = right.length > 0 ? 62 - right.length * 14 - 6 : 54
+  const j = center.indexOf(mine)
+  const n = center.length
+  return leftBound + (rightBound - leftBound) * (j + 0.5) / n
+}
+
+export function getFormationPos(i: number, side: TeamSide, formation?: Position[]): Vec2 {
+  const slots = formation && formation.length > 0 ? formation : DEFAULT_FORMATION
+  const pos = slots[i] ?? 'CM'
+  const row = FORMATION_ROW[pos] ?? 2
+  const x = rowX(slots, row, i)
+  const homeY = ROW_Y_HOME[row] ?? PITCH_LENGTH * 0.5
+  const y = side === 'home' ? homeY : PITCH_LENGTH - homeY
+  return { x, y }
 }
 
 function getOpponentGoal(side: TeamSide): Vec2 {
@@ -41,7 +77,8 @@ export function runPlayerAI(
   aiTimers: Map<string, number>,
   clock: number,
   stats: MatchStats,
-  events: MatchEvent[]
+  events: MatchEvent[],
+  formation?: Position[]
 ) {
   const timer = aiTimers.get(player.id) ?? 0
   aiTimers.set(player.id, timer + dt)
@@ -135,10 +172,10 @@ export function runPlayerAI(
       kickBall(ball, player, { x: aheadX, y: aheadY }, dribblePower)
       player.hasBall = false; return
     }
-    doAttack(player, teamPlayers, ball, oppGoal, side, isDefender, isMidfielder, isAttacker)
+    doAttack(player, teamPlayers, ball, oppGoal, side, isDefender, isMidfielder, isAttacker, formation)
     return
   }
-  doDefend(player, teamPlayers, oppPlayers, ball, ownGoal, oppGoal, side, isDefender, isMidfielder)
+  doDefend(player, teamPlayers, oppPlayers, ball, ownGoal, oppGoal, side, isDefender, isMidfielder, formation)
 }
 
 function doAttack(
@@ -149,11 +186,12 @@ function doAttack(
   side: TeamSide,
   isDefender: boolean,
   isMidfielder: boolean,
-  isAttacker: boolean
+  isAttacker: boolean,
+  formation?: Position[]
 ) {
   const isHome = side === 'home'
   const formIdx = teamPlayers.findIndex(p => p.id === player.id)
-  const formPos = getFormationPos(Math.max(0, formIdx), side)
+  const formPos = getFormationPos(Math.max(0, formIdx), side, formation)
   const dxBall = ball.x - player.x
   const dyBall = ball.y - player.y
   const distToBall = Math.hypot(dxBall, dyBall)
@@ -206,11 +244,12 @@ function doDefend(
   oppGoal: Vec2,
   side: TeamSide,
   isDefender: boolean,
-  isMidfielder: boolean
+  isMidfielder: boolean,
+  formation?: Position[]
 ) {
   const isHome = side === 'home'
   const formIdx = teamPlayers.findIndex(p => p.id === player.id)
-  const formPos = getFormationPos(Math.max(0, formIdx), side)
+  const formPos = getFormationPos(Math.max(0, formIdx), side, formation)
   const carrier = oppPlayers.find(p => p.hasBall)
   const sorted = [...teamPlayers].sort((a, b) => distance(a, ball) - distance(b, ball))
   const idx = sorted.indexOf(player)

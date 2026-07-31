@@ -2,23 +2,21 @@ import { TeamData, MatchState, TeamSide } from '../types'
 import { FixtureResult } from '../../league/types'
 import { PITCH_WIDTH, PITCH_LENGTH, GOAL_WIDTH, PHYSICS_DT, AI_THINK_INTERVAL, MATCH_DURATION, HALF_TIME } from '../constants'
 import { updateBallPosition, distance, kickBall, isInPenaltyArea } from './BallPhysics'
-import { runPlayerAI, movePlayer, processTouches } from './PlayerAI'
+import { runPlayerAI, movePlayer, processTouches, getFormationPos } from './PlayerAI'
 import { resetBallAfterGoal, resetBallAfterOutOfPlay, checkShot } from './MatchEvents'
 import { rng } from '../rng'
 
 function createSimState(homeTeam: TeamData, awayTeam: TeamData): MatchState {
   const homePlayers = homeTeam.players.map(p => ({ ...p, x: 0, y: 0, targetX: 0, targetY: 0, hasBall: false, isControlled: false, _dx: 0, _dy: 0, _vx: 0, _vy: 0 }))
   const awayPlayers = awayTeam.players.map(p => ({ ...p, x: 0, y: 0, targetX: 0, targetY: 0, hasBall: false, isControlled: false, _dx: 0, _dy: 0, _vx: 0, _vy: 0 }))
-  const homePositions = [
-    { x: PITCH_WIDTH / 2, y: PITCH_LENGTH - 3 }, { x: 12, y: 80 }, { x: 35, y: 84 }, { x: 65, y: 84 }, { x: 88, y: 80 },
-    { x: 10, y: 58 }, { x: 35, y: 55 }, { x: 65, y: 55 }, { x: 90, y: 58 }, { x: 35, y: 25 }, { x: 65, y: 25 },
-  ]
-  const awayPositions = [
-    { x: PITCH_WIDTH / 2, y: 3 }, { x: 12, y: 20 }, { x: 35, y: 16 }, { x: 65, y: 16 }, { x: 88, y: 20 },
-    { x: 10, y: 42 }, { x: 35, y: 45 }, { x: 65, y: 45 }, { x: 90, y: 42 }, { x: 35, y: 75 }, { x: 65, y: 75 },
-  ]
-  homePlayers.forEach((p, i) => { const pos = homePositions[i] ?? { x: PITCH_WIDTH / 2, y: PITCH_LENGTH - 10 }; p.x = pos.x; p.y = pos.y; p.targetX = pos.x; p.targetY = pos.y })
-  awayPlayers.forEach((p, i) => { const pos = awayPositions[i] ?? { x: PITCH_WIDTH / 2, y: 10 }; p.x = pos.x; p.y = pos.y; p.targetX = pos.x; p.targetY = pos.y })
+  homePlayers.forEach((p, i) => {
+    const pos = getFormationPos(i, 'home', homeTeam.formation)
+    p.x = pos.x; p.y = pos.y; p.targetX = pos.x; p.targetY = pos.y
+  })
+  awayPlayers.forEach((p, i) => {
+    const pos = getFormationPos(i, 'away', awayTeam.formation)
+    p.x = pos.x; p.y = pos.y; p.targetX = pos.x; p.targetY = pos.y
+  })
   return {
     status: 'playing', clock: MATCH_DURATION, speed: 1,
     ball: { x: PITCH_WIDTH / 2, y: PITCH_LENGTH / 2, vx: 0, vy: 0, lastTouchedBy: null, lastTouchedTeam: null },
@@ -55,7 +53,7 @@ export function fastSimulate(homeTeam: TeamData, awayTeam: TeamData): FixtureRes
     if (aiThinkTimer >= AI_THINK_INTERVAL) {
       aiThinkTimer = 0
       for (const player of state.players) {
-        runPlayerAI(player, state.ball, state.players, player.team, AI_THINK_INTERVAL, aiTimers, state.clock, state.stats, state.events)
+        runPlayerAI(player, state.ball, state.players, player.team, AI_THINK_INTERVAL, aiTimers, state.clock, state.stats, state.events, player.team === 'home' ? homeTeam.formation : awayTeam.formation)
       }
     }
 

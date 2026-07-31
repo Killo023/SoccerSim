@@ -156,4 +156,17 @@ export const FORMATIONS: Record<string, FormationPosition[]> = {
     { position: 'ST', x: 40, y: 22 },
     { position: 'ST', x: 60, y: 22 },
   ],
+  '4-3-2-1': [
+    { position: 'GK', x: 50, y: 95 },
+    { position: 'LB', x: 15, y: 80 },
+    { position: 'CB', x: 38, y: 82 },
+    { position: 'CB', x: 62, y: 82 },
+    { position: 'RB', x: 85, y: 80 },
+    { position: 'CM', x: 30, y: 55 },
+    { position: 'CM', x: 50, y: 55 },
+    { position: 'CM', x: 70, y: 55 },
+    { position: 'CAM', x: 38, y: 38 },
+    { position: 'CAM', x: 62, y: 38 },
+    { position: 'ST', x: 50, y: 18 },
+  ],
 }
