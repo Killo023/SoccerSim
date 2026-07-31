@@ -1394,6 +1394,8 @@ html, body, #app {
 /* Team Creation */
 .mp-creation {
   height: 100vh;
+  height: 100dvh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   background: rgba(5, 12, 8, 0.95);
@@ -1946,6 +1948,9 @@ html, body, #app {
 /* Draft Complete */
 .mp-draft-complete {
   text-align: center;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .mp-draft-complete h2 {
@@ -4380,4 +4385,579 @@ html, body, #app {
   text-align: left;
   font-size: 10px;
   color: rgba(241, 196, 15, 0.6);
+}
+
+/* ===== Online PvP Narrative Match ===== */
+
+.nm-screen {
+  height: 100vh;
+  height: 100dvh;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(5, 12, 8, 0.95);
+  overflow: hidden;
+}
+
+.nm-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  background: rgba(10, 25, 15, 0.85);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
+}
+
+.nm-kickoff-badge {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(0, 255, 65, 0.6);
+  font-weight: 700;
+}
+
+.nm-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.nm-fixture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.nm-team-head {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 2px solid rgba(0, 255, 65, 0.12);
+  border-radius: 12px;
+  background: rgba(10, 25, 15, 0.85);
+}
+
+.nm-team-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.nm-manager-name {
+  font-size: 12px;
+  color: rgba(0, 255, 65, 0.6);
+}
+
+.nm-formation {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.nm-vs-badge {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f1c40f;
+  letter-spacing: 2px;
+  flex-shrink: 0;
+}
+
+.nm-section-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(0, 255, 65, 0.55);
+  margin: 18px 0 10px;
+  text-align: center;
+}
+
+.nm-comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(10, 25, 15, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.nm-comp-table th {
+  padding: 10px 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 255, 65, 0.06);
+}
+
+.nm-comp-table td {
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 14px;
+  border-top: 1px solid rgba(0, 255, 65, 0.05);
+}
+
+.nm-comp-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nm-comp-val {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: monospace;
+}
+
+.nm-strong {
+  color: #00ff41;
+}
+
+.nm-odds {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nm-odds-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nm-odds-team {
+  width: 130px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nm-odds-draw-label {
+  color: #f1c40f;
+}
+
+.nm-odds-track {
+  flex: 1;
+  height: 12px;
+  background: rgba(5, 12, 8, 0.9);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.nm-odds-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s;
+}
+
+.nm-odds-home {
+  background: linear-gradient(90deg, #00ff41, rgba(0, 255, 65, 0.5));
+}
+
+.nm-odds-draw {
+  background: linear-gradient(90deg, #f1c40f, rgba(241, 196, 15, 0.5));
+}
+
+.nm-odds-away {
+  background: linear-gradient(90deg, #3498db, rgba(52, 152, 219, 0.5));
+}
+
+.nm-odds-val {
+  width: 44px;
+  font-family: monospace;
+  font-weight: 700;
+  color: #fff;
+}
+
+.nm-summary {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+}
+
+.nm-summary li {
+  padding: 10px 14px;
+  background: rgba(10, 25, 15, 0.85);
+  border-left: 3px solid rgba(0, 255, 65, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.nm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.nm-btn {
+  background: rgba(0, 255, 65, 0.08);
+  border: 1px solid rgba(0, 255, 65, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 12px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.nm-btn:hover {
+  background: rgba(0, 255, 65, 0.16);
+}
+
+.nm-btn-primary {
+  background: #00ff41;
+  border-color: #00ff41;
+  color: #04110a;
+}
+
+.nm-btn-primary:hover {
+  background: #2eff66;
+}
+
+.nm-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 14px 24px;
+  background: rgba(10, 25, 15, 0.85);
+  border-bottom: 1px solid rgba(0, 255, 65, 0.06);
+}
+
+.nm-score-team {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 18px;
+  border: 2px solid rgba(0, 255, 65, 0.12);
+  border-radius: 10px;
+  min-width: 120px;
+}
+
+.nm-score-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.nm-score-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f1c40f;
+  font-family: monospace;
+}
+
+.nm-score-vs {
+  font-size: 15px;
+  color: rgba(0, 255, 65, 0.5);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.nm-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nm-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(10, 25, 15, 0.85);
+  border-radius: 6px;
+  border-left: 3px solid rgba(0, 255, 65, 0.12);
+  font-size: 14px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.nm-event.nm-goal {
+  border-left-color: #f1c40f;
+  background: rgba(241, 196, 15, 0.08);
+}
+
+.nm-event.nm-break {
+  border-left-color: rgba(0, 180, 255, 0.7);
+  background: rgba(52, 152, 219, 0.08);
+}
+
+.nm-event.nm-ft {
+  border-left-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.08);
+}
+
+.nm-event.nm-tactical {
+  border-left-color: #9b59b6;
+  background: rgba(155, 89, 182, 0.08);
+}
+
+.nm-event.nm-save {
+  border-left-color: #f39c12;
+  background: rgba(243, 156, 18, 0.06);
+}
+
+.nm-event.nm-kickoff {
+  border-left-color: rgba(0, 255, 65, 0.5);
+  font-style: italic;
+  background: rgba(136, 136, 136, 0.05);
+}
+
+.nm-minute {
+  font-family: monospace;
+  font-weight: 700;
+  color: rgba(0, 255, 65, 0.5);
+  min-width: 36px;
+  font-size: 13px;
+}
+
+.nm-desc {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+}
+
+.nm-goal-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.nm-finished {
+  text-align: center;
+  padding: 20px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.nm-ft-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f1c40f;
+  display: block;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+.nm-ft-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+
+.nm-ft-num {
+  font-size: 26px;
+  color: #fff;
+  font-family: monospace;
+}
+
+.nm-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: rgba(10, 25, 15, 0.85);
+  border-top: 1px solid rgba(0, 255, 65, 0.06);
+  flex-shrink: 0;
+}
+
+.nm-speed {
+  display: flex;
+  gap: 4px;
+}
+
+.nm-result-card {
+  text-align: center;
+  padding: 24px 16px;
+  background: rgba(10, 25, 15, 0.6);
+  border: 1px solid rgba(0, 255, 65, 0.12);
+  border-radius: 14px;
+  margin-bottom: 8px;
+}
+
+.nm-result-winner {
+  font-size: 20px;
+  font-weight: 800;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.nm-result-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+
+.nm-result-num {
+  font-size: 34px;
+  color: #fff;
+  font-family: monospace;
+}
+
+.nm-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nm-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(10, 25, 15, 0.85);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.nm-goal-home {
+  border-left: 3px solid rgba(0, 255, 65, 0.5);
+}
+
+.nm-goal-away {
+  border-left: 3px solid #3498db;
+}
+
+.nm-goal-minute {
+  font-family: monospace;
+  font-weight: 700;
+  color: #f1c40f;
+  min-width: 36px;
+}
+
+.nm-goal-player {
+  flex: 1;
+  font-weight: 600;
+  color: #fff;
+}
+
+.nm-goal-assist {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.nm-goal-team {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.nm-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  padding: 8px;
+}
+
+.nm-stats td {
+  font-size: 15px;
+}
+
+.nm-stat-val {
+  font-weight: 700;
+  color: #fff;
+  font-family: monospace;
+}
+
+.nm-potm {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(241, 196, 15, 0.06);
+  border: 1px solid rgba(241, 196, 15, 0.25);
+  border-radius: 12px;
+}
+
+.nm-potm-star {
+  font-size: 28px;
+}
+
+.nm-potm-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nm-potm-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.nm-potm-team {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nm-potm-stat {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.nm-potm-rating {
+  font-size: 30px;
+  font-weight: 800;
+  color: #f1c40f;
+  font-family: monospace;
+}
+
+.ol-replay-speed {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+@media (max-width: 768px) {
+  .nm-scroll {
+    padding: 16px 14px 24px;
+  }
+  .nm-odds-team {
+    width: 90px;
+    font-size: 12px;
+  }
+  .nm-team-head {
+    min-width: 140px;
+  }
+  .nm-score-team {
+    min-width: 90px;
+    padding: 6px 12px;
+  }
+  .nm-feed {
+    padding: 12px 14px;
+  }
+  .nm-scoreboard {
+    gap: 10px;
+    padding: 12px 12px;
+  }
 }

@@ -46,10 +46,11 @@ function draftPlayerFromPick(match: any): DraftPlayer {
   }
 }
 
-function ManagerPicker({ members, myMember, onPicked }: {
+function ManagerPicker({ members, myMember, onPicked, countdown }: {
   members: (LeagueMember & { profile: any })[]
   myMember: LeagueMember
-  onPicked: () => void
+  countdown: number
+  onPicked: (mgr: FantasyManager) => void
 }) {
   const [error, setError] = useState('')
   const [picking, setPicking] = useState<string | null>(null)
@@ -64,7 +65,7 @@ function ManagerPicker({ members, myMember, onPicked }: {
     setError('')
     try {
       await setMemberManager(myMember.id, manager.id)
-      onPicked()
+      onPicked(manager)
     } catch (err: any) {
       setError(err.message || 'Manager could not be selected')
       setPicking(null)
@@ -76,6 +77,11 @@ function ManagerPicker({ members, myMember, onPicked }: {
       <div className="mp-creation-header">
         <div className="mp-creator-info">
           <span className="mp-creator-name">Pick Your Manager</span>
+        </div>
+        <div className="mp-timer">
+          <span className={`mp-timer-value ${countdown <= 15 ? 'urgent' : ''}`}>
+            {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
+          </span>
         </div>
       </div>
       <div className="ff-manager-picker-body">
@@ -250,7 +256,6 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
     }
 
     await saveDraftPicks(leagueId, myMember.id, buildPicks(manager, myMember.id, newSlots))
-    setCountdown(DRAFT_TIMER_SECONDS)
   }
 
   async function handleAutoFinish() {
@@ -275,28 +280,47 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
     window.location.hash = `#/league/${leagueId}`
   }
 
-  // Countdown timer — reads from refs so auto-finish always uses the latest picks.
+  async function handleManagerPicked(mgr: FantasyManager) {
+    setManager(mgr)
+    managerRef.current = mgr
+    if (myMember) await setupDraft(mgr, myMember.id)
+  }
+
+  // Countdown timer — runs from the moment the draft screen loads so the
+  // manager + full squad must be chosen within a single 1-minute window.
+  // Reads from refs so auto-finish always uses the latest picks.
   useEffect(() => {
-    if (done || loading || !manager) return
+    if (done || loading) return
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          handleAutoFinish()
+          if (managerRef.current) {
+            handleAutoFinish()
+          } else {
+            window.location.hash = `#/league/${leagueId}`
+          }
           return 0
         }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(timer)
-  }, [done, loading, manager])
+  }, [done, loading, manager, leagueId])
 
   if (loading) return <div className="loading-screen"><div className="spinner" /><p>Loading draft...</p></div>
   if (error) return <div className="auth-page"><div className="auth-card"><h1>Error</h1><p>{error}</p><a href={`#/league/${leagueId}`} className="auth-link">Back to lobby</a></div></div>
   if (!myMember) return null
 
   if (!manager) {
-    return <ManagerPicker members={members} myMember={myMember} onPicked={() => window.location.reload()} />
+    return (
+      <ManagerPicker
+        members={members}
+        myMember={myMember}
+        countdown={countdown}
+        onPicked={handleManagerPicked}
+      />
+    )
   }
 
   const currentSlot = slots[currentSlotIdx]

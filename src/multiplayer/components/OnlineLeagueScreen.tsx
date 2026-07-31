@@ -3,16 +3,18 @@ import { getLeague, getLeagueMembers, updateLeagueStatus } from '../api/leagues'
 import { getDraftPicks } from '../api/draft'
 import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
+import { simulateNarrativeMatch, type NarrativeTeamInfo, type NarrativeMatchReport } from '../../match/engine/NarrativeSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
 import { StatsPanel } from '../../match/components/StatsPanel'
 import { EventFeed } from '../../match/components/EventFeed'
 import { MatchEngine } from '../../match/engine/MatchEngine'
 import { MatchRenderer } from '../../match/renderer/MatchRenderer'
+import { OnlineNarrativeMatchView } from '../../match/components/OnlineNarrativeMatchView'
 import { ALL_CLUBS, LEAGUES } from '../../league/data/clubs'
 import type { TeamData, TeamSide, Position, MatchState } from '../../match/types'
 import { setMatchSeed, seedFromString } from '../../match/rng'
 import { getTeamManager, applyManagerBonus } from '../../league/data/managers'
-import { getFantasyManager, managerFormationPositions, computeChemistry, computeSystemProficiency, applyFantasyBonus } from '../fantasyManagers'
+import { getFantasyManager, managerFormationPositions, computeChemistry, computeSystemProficiency, computeSquadRatings, applyFantasyBonus } from '../fantasyManagers'
 import type { ManagerProfile } from '../../league/types'
 import type { League, MatchRecord } from '../../supabase/types'
 import { useMatchStore } from '../../store/matchStore'
@@ -130,15 +132,19 @@ function generateDoubleRoundRobin(teamNames: string[]): [string, string][][] {
 
 const TOTAL_TEAMS = 20
 
-function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
+function OnlineMatchView({ homeTeam, awayTeam, onFinish, replay }: {
   homeTeam: TeamData
   awayTeam: TeamData
   onFinish: (result: { homeGoals: number; awayGoals: number; homeShots: number; awayShots: number; homeShotsOnTarget: number; awayShotsOnTarget: number; homePossession: number }) => void
+  /** Replay mode: result is not recorded, speed controls are unlocked. */
+  replay?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const engineRef = useRef<MatchEngine | null>(null)
   const [finished, setFinished] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [state, setState] = useState<MatchState | null>(null)
+  const [replaySpeed, setReplaySpeed] = useState(1)
 
   const storeSetMatchState = useMatchStore(s => s.setMatchState)
 
@@ -172,14 +178,19 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
       },
     })
 
-    // Lock speed at 1x — speed changes would desync the two players' simulations
-    engine.setSpeed(1)
+    engineRef.current = engine
+    // Lock at 1x unless replay (replay results are never recorded, so speed is safe)
+    engine.setSpeed(replay ? replaySpeed : 1)
     engine.start()
 
     const handleResize = () => { if (canvas) renderer.resize(canvas) }
     window.addEventListener('resize', handleResize)
-    return () => { engine.destroy(); window.removeEventListener('resize', handleResize) }
+    return () => { engine.destroy(); engineRef.current = null; window.removeEventListener('resize', handleResize) }
   }, [homeTeam, awayTeam, homeTeam.id, awayTeam.id, storeSetMatchState])
+
+  useEffect(() => {
+    if (replay && engineRef.current) engineRef.current.setSpeed(replaySpeed)
+  }, [replaySpeed, replay])
 
   async function handleFinish() {
     if (result) onFinish(result)
@@ -273,10 +284,31 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
         </div>
       </div>
       <div className="match-bar">
-        <span className="ol-sim-spinner" />
-        <span style={{ fontSize: 13, color: 'rgba(0,255,65,0.5)' }}>
-          Match in progress — locked at real-time speed
-        </span>
+        {replay ? (
+          <>
+            <div className="ol-replay-speed">
+              {[0.5, 1, 2, 4].map(s => (
+                <button
+                  key={s}
+                  className={`ctrl-btn ${replaySpeed === s ? 'active' : ''}`}
+                  onClick={() => setReplaySpeed(s)}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+            <span style={{ fontSize: 13, color: 'rgba(0,255,65,0.5)' }}>
+              Replay only — the result is already recorded
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="ol-sim-spinner" />
+            <span style={{ fontSize: 13, color: 'rgba(0,255,65,0.5)' }}>
+              Match in progress — locked at real-time speed
+            </span>
+          </>
+        )}
       </div>
     </div>
   )
@@ -376,10 +408,55 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   const runningRef = useRef(false)
   const playingRef = useRef(false)
 
-  const [physicsMatch, setPhysicsMatch] = useState<{
-    homeTeam: TeamData; awayTeam: TeamData
-    matchId: string; homeMemberId: string; awayMemberId: string
+  const [pvpMatch, setPvpMatch] = useState<{
+    homeTeam: TeamData
+    awayTeam: TeamData
+    report: NarrativeMatchReport
+    matchId: string
+    homeMemberId: string
+    awayMemberId: string
+    weekNumber: number
   } | null>(null)
+  const [showReplay, setShowReplay] = useState(false)
+
+  function buildTeamInfo(team: DraftTeam, teamData: TeamData): NarrativeTeamInfo {
+    const mgr = getFantasyManager(team.managerId)
+    const pickMeta = team.players.map(p => ({
+      position: p.position as Position,
+      nationality: p.player_nationality,
+      playstyle: p.player_playstyle,
+      rating: p.player_rating,
+      attrs: p.attributes,
+    }))
+    const ratings = computeSquadRatings(pickMeta)
+    return {
+      name: teamData.name,
+      shortName: teamData.shortName,
+      color: teamData.color,
+      managerName: mgr?.name ?? 'Auto Manager',
+      formation: mgr?.formation ?? '4-4-2',
+      players: teamData.players,
+      ratings,
+      chemistry: mgr ? computeChemistry(pickMeta, mgr) : 0,
+      system: mgr ? computeSystemProficiency(pickMeta, mgr) : 0,
+    }
+  }
+
+  function openPvPMatch(match: MatchRecord, ht: DraftTeam, at: DraftTeam) {
+    const homeTeam = draftPicksToTeamData(ht.players, match.home_team_name, ht.teamColor, 'home', ht.managerId)
+    const awayTeam = draftPicksToTeamData(at.players, match.away_team_name, at.teamColor, 'away', at.managerId)
+    const report = simulateNarrativeMatch(buildTeamInfo(ht, homeTeam), buildTeamInfo(at, awayTeam))
+    setShowReplay(false)
+    setPvpMatch({
+      homeTeam,
+      awayTeam,
+      report,
+      matchId: match.id,
+      homeMemberId: ht.memberId,
+      awayMemberId: at.memberId,
+      weekNumber: match.week_number,
+    })
+  }
 
   async function load() {
     try {
@@ -554,11 +631,12 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         if (weekMatches.length === 0) {
           currentWeek++
           continue
-        }         const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
-         if (humanMatch) {
-           const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
-           // If the human match is still 'pending' or 'playing', don't fast-simulate it
-           if (!dbM || dbM.status === 'pending' || dbM.status === 'playing') {
+        }
+        const humanMatch = weekMatches.find(m => m.home_member_id && m.away_member_id)
+        if (humanMatch) {
+          const { data: dbM } = await supabase.from('matches').select('status').eq('id', humanMatch.id).maybeSingle()
+          if (dbM && dbM.status === 'pending') {
+            // Legit pending human-vs-human match — open the narrative PvP sim.
             setSimulating(false)
             const [freshMembers, freshPicks] = await Promise.all([
               getLeagueMembers(leagueId),
@@ -576,16 +654,17 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
             const ht = freshHumans.find(t => t.memberId === humanMatch.home_member_id)
             const at = freshHumans.find(t => t.memberId === humanMatch.away_member_id)
             if (ht && at && ht.players.length >= 11 && at.players.length >= 11) {
-              const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home', ht.managerId)
-              const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away', at.managerId)
               playingRef.current = true
-              setPhysicsMatch({
-                homeTeam, awayTeam,
-                matchId: humanMatch.id,
-                homeMemberId: humanMatch.home_member_id!,
-                awayMemberId: humanMatch.away_member_id!,
-              })
+              openPvPMatch(humanMatch, ht, at)
             }
+            break
+          } else if (dbM && dbM.status === 'finished') {
+            // Already simulated (e.g. the friend played it) — fall through and
+            // fast-sim the remaining AI matches of the week. Never re-open it.
+          } else {
+            // 'playing' or a transient DB read failure — do NOT re-open an
+            // already-simulated match; stop here and wait for the next poll.
+            setSimulating(false)
             break
           }
         }
@@ -688,29 +767,23 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const at = humans.find(t => t.memberId === humanMatch.away_member_id)
     if (!ht || !at || ht.players.length < 11 || at.players.length < 11) { setError('Team data incomplete.'); return }
 
-    const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home', ht.managerId)
-    const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away', at.managerId)
-
     playingRef.current = true
-    setPhysicsMatch({
-      homeTeam, awayTeam,
-      matchId: humanMatch.id,
-      homeMemberId: humanMatch.home_member_id!,
-      awayMemberId: humanMatch.away_member_id!,
-    })
+    openPvPMatch(humanMatch, ht, at)
   }
 
-  async function handlePhysicsFinish(result: { homeGoals: number; awayGoals: number; homeShots: number; awayShots: number; homeShotsOnTarget: number; awayShotsOnTarget: number; homePossession: number }) {
-    if (!physicsMatch) return
+  async function handlePvPFinish() {
+    if (!pvpMatch) return
+    const match = pvpMatch
+    const report = match.report
     playingRef.current = false
 
     // --- Read the authoritative DB state first ---
-    const { data: existing } = await supabase.from('matches').select('status,home_goals,away_goals').eq('id', physicsMatch.matchId).maybeSingle()
+    const { data: existing } = await supabase.from('matches').select('status,home_goals,away_goals').eq('id', match.matchId).maybeSingle()
 
     if (existing?.status === 'finished') {
       // Another player already saved the result.
       // Refresh local data so we don't show stale standings, then continue auto-sim.
-      setPhysicsMatch(null)
+      setPvpMatch(null)
       const [refreshedM, refreshedL] = await Promise.all([
         getLeagueMatches(leagueId),
         getLeague(leagueId),
@@ -734,15 +807,15 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       return
     }
 
-    // --- Save our match result ---
-    await updateMatchResult(physicsMatch.matchId, {
-      home_goals: result.homeGoals,
-      away_goals: result.awayGoals,
-      home_shots: result.homeShots,
-      away_shots: result.awayShots,
-      home_shots_on_target: result.homeShotsOnTarget,
-      away_shots_on_target: result.awayShotsOnTarget,
-      home_possession: result.homePossession,
+    // --- Save our deterministic narrative result (idempotent: WHERE status='pending') ---
+    await updateMatchResult(match.matchId, {
+      home_goals: report.homeGoals,
+      away_goals: report.awayGoals,
+      home_shots: report.stats.shots[0],
+      away_shots: report.stats.shots[1],
+      home_shots_on_target: report.stats.shotsOnTarget[0],
+      away_shots_on_target: report.stats.shotsOnTarget[1],
+      home_possession: report.stats.possession[0],
       status: 'finished',
       played_at: new Date().toISOString(),
     })
@@ -759,13 +832,19 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       }
     }
 
-    setPhysicsMatch(null)
+    setPvpMatch(null)
 
-    // --- Advance the week ---
-    // NOT passing expectedWeek because the DB current_week starts at 0
-    // while the week number starts at 1, which would cause the optimistic
-    // lock check to always fail for the first week.
-    await advanceLeagueWeek(leagueId)
+    // --- Advance the week using a compare-and-swap so only ONE player advances ---
+    // (both players finish the same deterministic match at roughly the same time)
+    const { data: dbL } = await supabase.from('leagues').select('current_week').eq('id', leagueId).maybeSingle()
+    const dbWeek = dbL ? ((dbL as any).current_week ?? 0) : 0
+    if (dbWeek < match.weekNumber) {
+      await supabase
+        .from('leagues')
+        .update({ current_week: dbWeek + 1 })
+        .eq('id', leagueId)
+        .eq('current_week', dbWeek)
+    }
 
     // --- Refresh everything from DB ---
     const [refreshedM, refreshedL] = await Promise.all([
@@ -842,12 +921,25 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     runningRef.current = false
   }
 
-  if (physicsMatch) {
+  if (pvpMatch && showReplay) {
     return (
       <OnlineMatchView
-        homeTeam={physicsMatch.homeTeam}
-        awayTeam={physicsMatch.awayTeam}
-        onFinish={handlePhysicsFinish}
+        homeTeam={pvpMatch.homeTeam}
+        awayTeam={pvpMatch.awayTeam}
+        replay
+        onFinish={() => setShowReplay(false)}
+      />
+    )
+  }
+
+  if (pvpMatch) {
+    return (
+      <OnlineNarrativeMatchView
+        homeTeam={pvpMatch.homeTeam}
+        awayTeam={pvpMatch.awayTeam}
+        report={pvpMatch.report}
+        onWatch2D={() => setShowReplay(true)}
+        onFinish={handlePvPFinish}
       />
     )
   }
@@ -909,7 +1001,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         </div>
       )}
 
-      {hasHumanMatch && !physicsMatch && (
+      {hasHumanMatch && !pvpMatch && (
         <div className="ol-human-match-banner">
           <div className="ol-hm-content">
             <span className="ol-hm-icon">⚔</span>
