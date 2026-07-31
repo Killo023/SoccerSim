@@ -1,14 +1,16 @@
 import { TeamData, TeamSide, Position } from '../types'
 import { Club } from '../../league/types'
+import { getTeamManager, applyManagerBonus } from '../../league/data/managers'
 
 export function clubToTeamData(club: Club, side: TeamSide): TeamData {
+  const manager = club.manager ?? getTeamManager(club.name)
   const players = club.players.map((p, i) => ({
     id: `${side}-${i}`,
     name: p.name,
     number: p.number,
     position: p.position,
     team: side,
-    attrs: { ...p.attrs },
+    attrs: applyManagerBonus(manager, { ...p.attrs }),
     x: 0,
     y: 0,
     targetX: 0,

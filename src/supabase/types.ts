@@ -26,6 +26,8 @@ export interface LeagueMember {
   team_color: string
   draft_completed: boolean
   ready: boolean
+  /** Fantasy manager id for the fantasy draft (e.g. 'xabiAlonso'), null until chosen. */
+  manager_id: string | null
   joined_at: string
 }
 
@@ -37,6 +39,12 @@ export interface DraftPick {
   player_club: string
   position: string
   attributes: Record<string, number>
+  /** Player's playstyle (e.g. 'Inside Forward') — used for system proficiency. */
+  player_playstyle: string | null
+  /** Player's nationality (e.g. 'Spain') — used for chemistry. */
+  player_nationality: string | null
+  /** Player's overall rating. */
+  player_rating: number | null
   pick_round: number
   pick_order: number
   created_at: string

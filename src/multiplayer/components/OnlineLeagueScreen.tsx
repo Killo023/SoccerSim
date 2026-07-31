@@ -11,6 +11,9 @@ import { MatchRenderer } from '../../match/renderer/MatchRenderer'
 import { ALL_CLUBS, LEAGUES } from '../../league/data/clubs'
 import type { TeamData, TeamSide, Position, MatchState } from '../../match/types'
 import { setMatchSeed, seedFromString } from '../../match/rng'
+import { getTeamManager, applyManagerBonus } from '../../league/data/managers'
+import { getFantasyManager, managerFormationPositions, computeChemistry, computeSystemProficiency, applyFantasyBonus } from '../fantasyManagers'
+import type { ManagerProfile } from '../../league/types'
 import type { League, MatchRecord } from '../../supabase/types'
 import { useMatchStore } from '../../store/matchStore'
 import type { DraftPick } from '../../supabase/types'
@@ -22,10 +25,60 @@ interface DraftTeam {
   memberName: string
   teamName: string
   teamColor: string
+  managerId: string | null
   players: DraftPick[]
 }
 
-function draftPicksToTeamData(picks: DraftPick[], teamName: string, color: string, side: TeamSide): TeamData {
+function draftPicksToTeamData(picks: DraftPick[], teamName: string, color: string, side: TeamSide, managerId: string | null): TeamData {
+  const baseAttrs = (p: DraftPick) => ({
+    pace: p.attributes.pace ?? 50,
+    shooting: p.attributes.shooting ?? 50,
+    passing: p.attributes.passing ?? 50,
+    dribbling: p.attributes.dribbling ?? 50,
+    defending: p.attributes.defending ?? 50,
+    physical: p.attributes.physical ?? 50,
+  })
+
+  const fantasyManager = getFantasyManager(managerId)
+  if (fantasyManager) {
+    // Fantasy draft team — formation and bonuses follow the chosen manager.
+    // Chemistry + system proficiency are pure functions of stored picks, so
+    // both players' clients compute identical teams (determinism preserved).
+    const pickMeta = picks.map(p => ({
+      position: p.position as Position,
+      nationality: p.player_nationality,
+      playstyle: p.player_playstyle,
+      rating: p.player_rating,
+      attrs: p.attributes,
+    }))
+    const chemistry = computeChemistry(pickMeta, fantasyManager)
+    const systemProficiency = computeSystemProficiency(pickMeta, fantasyManager)
+    return {
+      id: teamName,
+      name: teamName,
+      shortName: teamName.slice(0, 3).toUpperCase(),
+      color,
+      side,
+      formation: managerFormationPositions(fantasyManager),
+      players: picks.map((p, i) => ({
+        id: `${teamName}-${i}`,
+        name: p.player_name,
+        number: i + 1,
+        position: p.position as Position,
+        team: side,
+        attrs: applyFantasyBonus(fantasyManager, chemistry, systemProficiency, {
+          position: p.position as Position,
+          playstyle: p.player_playstyle,
+        }, baseAttrs(p)),
+        x: 0, y: 0, targetX: 0, targetY: 0,
+        hasBall: false, isControlled: false,
+        _dx: 0, _dy: 0, _vx: 0, _vy: 0,
+      })),
+    }
+  }
+
+  // Legacy/deterministic default manager per team name (no fantasy manager chosen).
+  const manager = getTeamManager(teamName)
   return {
     id: teamName,
     name: teamName,
@@ -39,19 +92,16 @@ function draftPicksToTeamData(picks: DraftPick[], teamName: string, color: strin
       number: i + 1,
       position: p.position as Position,
       team: side,
-      attrs: {
-        pace: p.attributes.pace ?? 50,
-        shooting: p.attributes.shooting ?? 50,
-        passing: p.attributes.passing ?? 50,
-        dribbling: p.attributes.dribbling ?? 50,
-        defending: p.attributes.defending ?? 50,
-        physical: p.attributes.physical ?? 50,
-      },
+      attrs: applyManagerBonus(manager, baseAttrs(p)),
       x: 0, y: 0, targetX: 0, targetY: 0,
       hasBall: false, isControlled: false,
       _dx: 0, _dy: 0, _vx: 0, _vy: 0,
     })),
   }
+}
+
+function managerLabel(m: ManagerProfile): string {
+  return `${m.name} · ${m.preferredSystem}`
 }
 
 function generateDoubleRoundRobin(teamNames: string[]): [string, string][][] {
@@ -296,7 +346,7 @@ function SeasonResults({ standings, leagueName }: { standings: ReturnType<typeof
   )
 }
 
-function computeStandings(allTeams: { name: string; color: string; isHuman: boolean }[], matches: MatchRecord[]) {
+function computeStandings(allTeams: { name: string; color: string; isHuman: boolean; manager: ManagerProfile }[], matches: MatchRecord[]) {
   return allTeams.map(team => {
     const teamMatches = matches.filter(m => (m.home_team_name === team.name || m.away_team_name === team.name) && m.status === 'finished')
     const wins = teamMatches.filter(m => {
@@ -349,6 +399,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
           memberName: (member as any).profile?.display_name || '?',
           teamName: member.team_name,
           teamColor: member.team_color,
+          managerId: member.manager_id ?? null,
           players: memberPicks,
         }
       })
@@ -436,7 +487,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         if (match.home_member_id) {
           const ht = humans.find(t => t.memberId === match.home_member_id)
           if (!ht || ht.players.length < 11) continue
-          homeData = draftPicksToTeamData(ht.players, match.home_team_name, ht.teamColor, 'home')
+          homeData = draftPicksToTeamData(ht.players, match.home_team_name, ht.teamColor, 'home', ht.managerId)
         } else {
           const club = clubs.find(c => c.name === match.home_team_name)
           if (!club) continue
@@ -446,7 +497,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         if (match.away_member_id) {
           const at = humans.find(t => t.memberId === match.away_member_id)
           if (!at || at.players.length < 11) continue
-          awayData = draftPicksToTeamData(at.players, match.away_team_name, at.teamColor, 'away')
+          awayData = draftPicksToTeamData(at.players, match.away_team_name, at.teamColor, 'away', at.managerId)
         } else {
           const club = clubs.find(c => c.name === match.away_team_name)
           if (!club) continue
@@ -518,14 +569,15 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
               memberName: (member as any).profile?.display_name || '?',
               teamName: member.team_name,
               teamColor: member.team_color,
+              managerId: member.manager_id ?? null,
               players: freshPicks.filter(p => p.member_id === member.id),
             }))
             humanTeamsRef.current = freshHumans
             const ht = freshHumans.find(t => t.memberId === humanMatch.home_member_id)
             const at = freshHumans.find(t => t.memberId === humanMatch.away_member_id)
             if (ht && at && ht.players.length >= 11 && at.players.length >= 11) {
-              const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
-              const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
+              const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home', ht.managerId)
+              const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away', at.managerId)
               playingRef.current = true
               setPhysicsMatch({
                 homeTeam, awayTeam,
@@ -636,8 +688,8 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     const at = humans.find(t => t.memberId === humanMatch.away_member_id)
     if (!ht || !at || ht.players.length < 11 || at.players.length < 11) { setError('Team data incomplete.'); return }
 
-    const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home')
-    const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away')
+    const homeTeam = draftPicksToTeamData(ht.players, humanMatch.home_team_name, ht.teamColor, 'home', ht.managerId)
+    const awayTeam = draftPicksToTeamData(at.players, humanMatch.away_team_name, at.teamColor, 'away', at.managerId)
 
     playingRef.current = true
     setPhysicsMatch({
@@ -806,8 +858,8 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
   const pending = matches.filter(m => m.week_number === currentWeek && m.status === 'pending')
   const hasHumanMatch = pending.some(m => m.home_member_id && m.away_member_id)
   const allTeams = [
-    ...humanTeamsRef.current.map(t => ({ name: t.teamName, color: t.teamColor, isHuman: true })),
-    ...botClubs.map(c => ({ name: c.name, color: c.color, isHuman: false })),
+    ...humanTeamsRef.current.map(t => ({ name: t.teamName, color: t.teamColor, isHuman: true, manager: getTeamManager(t.teamName) })),
+    ...botClubs.map(c => ({ name: c.name, color: c.color, isHuman: false, manager: c.manager ?? getTeamManager(c.name) })),
   ]
 
   const standings = computeStandings(allTeams, matches)
@@ -864,9 +916,15 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
             <div className="ol-hm-teams">
               {pending.filter(m => m.home_member_id && m.away_member_id).map(m => (
                 <span key={m.id} className="ol-hm-pair">
-                  <strong>{m.home_team_name}</strong>
+                  <span className="ol-hm-team">
+                    <strong>{m.home_team_name}</strong>
+                    <span className="ol-hm-manager">{managerLabel(getTeamManager(m.home_team_name))}</span>
+                  </span>
                   <span className="ol-hm-vs">vs</span>
-                  <strong>{m.away_team_name}</strong>
+                  <span className="ol-hm-team">
+                    <strong>{m.away_team_name}</strong>
+                    <span className="ol-hm-manager">{managerLabel(getTeamManager(m.away_team_name))}</span>
+                  </span>
                 </span>
               ))}
             </div>
@@ -917,7 +975,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
                 <td className="ol-rank">{i + 1}</td>
                 <td className="ol-team-cell">
                   <span className="ol-team-dot" style={{ backgroundColor: s.color }} />
-                  <span className="ol-team-name">{s.name}</span>
+                  <span className="ol-team-info">
+                    <span className="ol-team-name">{s.name}</span>
+                    <span className="ol-team-manager">{managerLabel(s.manager)}</span>
+                  </span>
                   {s.isHuman && <span className="ol-team-badge">YOU</span>}
                 </td>
                 <td>{s.played}</td>

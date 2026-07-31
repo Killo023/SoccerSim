@@ -8,6 +8,7 @@ import {
   UAE_TEAMS,
   QATAR_TEAMS,
 } from './arabLeagues'
+import { getTeamManager } from './managers'
 
 export interface LeagueDefinition {
   id: string
@@ -18,12 +19,20 @@ export interface LeagueDefinition {
   region: string
 }
 
+/** Attaches the club's manager (real where known, deterministic default otherwise). */
+function attachManagers(clubs: Club[]): Club[] {
+  return clubs.map(c => ({
+    ...c,
+    manager: getTeamManager(c.name),
+  }))
+}
+
 export const LEAGUES: LeagueDefinition[] = [
   {
     id: 'premier-league',
     name: 'Premier League',
     shortName: 'EPL',
-    clubs: PREMIER_LEAGUE_TEAMS,
+    clubs: attachManagers(PREMIER_LEAGUE_TEAMS),
     tier: 1,
     region: 'England',
   },
@@ -31,7 +40,7 @@ export const LEAGUES: LeagueDefinition[] = [
     id: 'la-liga',
     name: 'La Liga',
     shortName: 'LALIGA',
-    clubs: LA_LIGA_TEAMS,
+    clubs: attachManagers(LA_LIGA_TEAMS),
     tier: 1,
     region: 'Spain',
   },
@@ -39,7 +48,7 @@ export const LEAGUES: LeagueDefinition[] = [
     id: 'championship',
     name: 'Championship',
     shortName: 'CHAMP',
-    clubs: CHAMPIONSHIP_TEAMS,
+    clubs: attachManagers(CHAMPIONSHIP_TEAMS),
     tier: 2,
     region: 'England',
   },
@@ -47,7 +56,7 @@ export const LEAGUES: LeagueDefinition[] = [
     id: 'champions-league',
     name: 'Champions League',
     shortName: 'UCL',
-    clubs: CHAMPIONS_LEAGUE_TEAMS,
+    clubs: attachManagers(CHAMPIONS_LEAGUE_TEAMS),
     tier: 1,
     region: 'Europe',
   },
@@ -55,7 +64,7 @@ export const LEAGUES: LeagueDefinition[] = [
     id: 'saudi-league',
     name: 'Saudi Pro League',
     shortName: 'SPL',
-    clubs: SAUDI_TEAMS,
+    clubs: attachManagers(SAUDI_TEAMS),
     tier: 1,
     region: 'Saudi Arabia',
   },
@@ -63,7 +72,7 @@ export const LEAGUES: LeagueDefinition[] = [
     id: 'uae-league',
     name: 'UAE Pro League',
     shortName: 'UAEPL',
-    clubs: UAE_TEAMS,
+    clubs: attachManagers(UAE_TEAMS),
     tier: 1,
     region: 'UAE',
   },
@@ -71,7 +80,7 @@ export const LEAGUES: LeagueDefinition[] = [
     id: 'qatar-league',
     name: 'Qatar Stars League',
     shortName: 'QSL',
-    clubs: QATAR_TEAMS,
+    clubs: attachManagers(QATAR_TEAMS),
     tier: 1,
     region: 'Qatar',
   },

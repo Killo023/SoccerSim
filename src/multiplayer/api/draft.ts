@@ -35,6 +35,17 @@ export async function markDraftComplete(memberId: string): Promise<void> {
   if (error) throw error
 }
 
+/** First-come-first-served fantasy manager selection. Throws if the manager is already taken. */
+export async function setMemberManager(memberId: string, managerId: string): Promise<void> {
+  const { data, error } = await supabase.rpc('set_member_manager', {
+    p_member_id: memberId,
+    p_manager_id: managerId,
+  })
+  if (error) throw error
+  const result = data as { error?: string } | null
+  if (result?.error) throw new Error(result.error)
+}
+
 export async function allDraftsComplete(leagueId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('all_drafts_complete', { p_league_id: leagueId })
   if (error) throw error

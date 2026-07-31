@@ -35,7 +35,7 @@ export interface PlayerProfile {
 
 export type MultiplayerPhase = 'setup' | 'creating' | 'lobby' | 'league' | 'match'
 
-export const FORMATION_OPTIONS = ['4-4-2', '4-3-3', '3-5-2'] as const
+export const FORMATION_OPTIONS = ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2'] as const
 export type FormationName = typeof FORMATION_OPTIONS[number]
 
 export const TEAM_COLORS = [

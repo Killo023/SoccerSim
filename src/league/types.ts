@@ -1,5 +1,22 @@
 import { PlayerAttrs, Position } from '../match/types'
 
+export type TacticalSystem =
+  | 'Gegenpress'
+  | 'Positional Play'
+  | 'Tiki-Taka'
+  | 'Counter Attack'
+  | 'Direct Play'
+  | 'Wing Overload'
+  | 'Compact Defence'
+  | 'Total Football'
+
+export interface ManagerProfile {
+  name: string
+  preferredSystem: TacticalSystem
+  /** Proficiency (0-100) per tactical system. Managers always perform best in their preferred system. */
+  systemRatings: Partial<Record<TacticalSystem, number>>
+}
+
 export interface ClubPlayerDef {
   name: string
   number: number
@@ -22,6 +39,8 @@ export interface Club {
   formation: Position[]
   /** Full squad roster (real players) used by the multiplayer draft pool. */
   squad?: ClubPlayerDef[]
+  /** Manager profile — real managers for the 20 listed clubs, deterministic defaults otherwise. */
+  manager?: ManagerProfile
 }
 
 export interface FixtureResult {

@@ -32,10 +32,12 @@ CREATE TABLE IF NOT EXISTS league_members (
   team_color TEXT NOT NULL DEFAULT '#ff4444',
   draft_completed BOOLEAN NOT NULL DEFAULT false,
   ready BOOLEAN NOT NULL DEFAULT false,
+  manager_id TEXT,
   joined_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   UNIQUE(league_id, profile_id)
 );
 ALTER TABLE league_members ADD COLUMN IF NOT EXISTS ready BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE league_members ADD COLUMN IF NOT EXISTS manager_id TEXT;
 
 CREATE TABLE IF NOT EXISTS draft_picks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -45,6 +47,9 @@ CREATE TABLE IF NOT EXISTS draft_picks (
   player_club TEXT NOT NULL DEFAULT '',
   position TEXT NOT NULL DEFAULT '',
   attributes JSONB NOT NULL DEFAULT '{}',
+  player_playstyle TEXT,
+  player_nationality TEXT,
+  player_rating INTEGER,
   pick_round INTEGER NOT NULL,
   pick_order INTEGER NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
@@ -144,7 +149,7 @@ AS $$
 BEGIN
   DELETE FROM public.draft_picks WHERE league_id = p_league_id AND member_id = p_member_id;
   IF jsonb_array_length(p_picks) > 0 THEN
-    INSERT INTO public.draft_picks (league_id, member_id, player_name, player_club, position, attributes, pick_round, pick_order)
+    INSERT INTO public.draft_picks (league_id, member_id, player_name, player_club, position, attributes, player_playstyle, player_nationality, player_rating, pick_round, pick_order)
     SELECT
       p_league_id,
       p_member_id,
@@ -152,10 +157,43 @@ BEGIN
       COALESCE((item->>'player_club')::TEXT, ''),
       COALESCE((item->>'position')::TEXT, ''),
       COALESCE((item->'attributes')::JSONB, '{}'::JSONB),
+      COALESCE((item->>'player_playstyle')::TEXT, ''),
+      COALESCE((item->>'player_nationality')::TEXT, ''),
+      COALESCE((item->>'player_rating')::INTEGER, NULL),
       COALESCE((item->>'pick_round')::INTEGER, 0),
       COALESCE((item->>'pick_order')::INTEGER, 0)
     FROM jsonb_array_elements(p_picks) AS item;
   END IF;
+END;
+$$;
+
+-- First-come-first-served fantasy manager selection
+-- At most one member per league may claim a given manager.
+-- The partial unique index makes this race-free: the UPDATE raises a
+-- unique_violation if another member already claimed it.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_league_member_manager
+  ON public.league_members (league_id, manager_id)
+  WHERE manager_id IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION set_member_manager(p_member_id UUID, p_manager_id TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_league_id UUID;
+BEGIN
+  SELECT league_id INTO v_league_id FROM public.league_members WHERE id = p_member_id;
+  IF v_league_id IS NULL THEN
+    RETURN jsonb_build_object('error', 'Member not found');
+  END IF;
+
+  BEGIN
+    UPDATE public.league_members SET manager_id = p_manager_id WHERE id = p_member_id;
+    RETURN jsonb_build_object('ok', true, 'manager_id', p_manager_id);
+  EXCEPTION WHEN unique_violation THEN
+    RETURN jsonb_build_object('error', 'Manager already taken');
+  END;
 END;
 $$;
 

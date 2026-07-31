@@ -121,6 +121,24 @@ The following bugs were fixed in the physics engine to resolve the "22 players c
 
 The engine should now produce realistic spread and continuous ball movement with players attacking the correct goal.
 
+### Fantasy Draft System (July 2026)
+- Online league draft now starts with a **fantasy manager picker**: 20 iconic managers (Xabi Alonso, Guardiola, Klopp, Mourinho, Ancelotti, Simeone, Tuchel, etc.) each with a preferred formation and a per-position playstyle system (e.g. Xabi Alonso → 4-2-3-1, GK Sweeper Keeper, CB Ball-Playing Defender, CDM Holding Midfielder, CAM Chance Creator, LW/RW Inside Forward, ST False 9)
+- Managers are **first-come, first-served** per league (enforced by a partial unique index + `set_member_manager` RPC that returns 'Manager already taken' on `unique_violation`)
+- The draft uses the **manager's formation** (4-4-2 / 4-3-3 / 4-2-3-1 / 3-5-2); each slot shows the required playstyle and player cards get a **✓ System fit** badge when the player's playstyle matches
+- **Chemistry** (nationality groups): groups of 3+ same-nationality players give `min(count,6)*5` points; the manager's own nationality adds +10 when its group is completed; capped at 100 (matches the Xabi Alonso spec: Spain 8 players → 30 + manager link 10 = 40/100)
+- **System Proficiency**: index-to-index fraction of slots whose player playstyle matches the manager requirement, 0-100
+- **Squad ratings**: Attack / Midfield / Defence / Goalkeeper / Overall computed from the drafted players' ratings
+- Chemistry + proficiency apply a **deterministic attribute bonus** in the online league sim (`applyFantasyBonus`), so both clients compute identical teams
+- New SQL: `src/supabase/fantasy_draft.sql` adds `league_members.manager_id` and `draft_picks.player_playstyle/player_nationality/player_rating`, and an updated `save_draft_picks`
+
+### Manager System (July 2026)
+- Every club has a manager profile (`club.manager`): 20 real 2026-27 managers (e.g. Pep Guardiola at Man City → Tiki-Taka 100, Arteta → Positional Play 100, Slot → Gegenpress 100, Emery → Counter Attack 100)
+- Each manager has a **preferred tactical system** (Gegenpress, Positional Play, Tiki-Taka, Counter Attack, Direct Play, Wing Overload, Compact Defence, Total Football) and **proficiency ratings** (0-100) per system
+- Clubs without a listed real manager get a **deterministic generated default** (seeded from the club name via `seedFromString`), so both online-league clients build identical managers
+- **Tactical bonus**: `applyManagerBonus` boosts player attributes relevant to the manager's preferred system, scaled by proficiency (e.g. Compact Defence → +defending/+physical, Tiki-Taka → +passing/+dribbling). Applied in `clubToTeamData` and `draftPicksToTeamData` (default manager per team name for human draft teams)
+- Manager name + preferred system shown in the online-league **standings rows** and the **human-vs-human match banner**
+- Bonus math is pure/deterministic — does not break the cross-device match determinism guarantee
+
 ### Online League (Friends League 2.0)
 - League creation with invite code, online sync via Supabase (RLS-protected)
 - Auto-simulates AI weeks in the background; pauses automatically when it's your human-vs-human matchup
