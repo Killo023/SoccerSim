@@ -5,6 +5,9 @@ export interface ClubPlayerDef {
   number: number
   position: Position
   attrs: PlayerAttrs
+  nationality?: string
+  playstyle?: string
+  rating?: number
 }
 
 export interface Club {
@@ -12,8 +15,13 @@ export interface Club {
   name: string
   shortName: string
   color: string
+  /** Team overall rating (1-99) from the club database. */
+  overall?: number
+  /** Starting XI (11 players, ordered for the match engine formation). */
   players: ClubPlayerDef[]
   formation: Position[]
+  /** Full squad roster (real players) used by the multiplayer draft pool. */
+  squad?: ClubPlayerDef[]
 }
 
 export interface FixtureResult {

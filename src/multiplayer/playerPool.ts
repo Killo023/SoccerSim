@@ -13,6 +13,9 @@ export interface DraftPlayer {
   clubColor: string
   leagueName: string
   overall: number
+  nationality?: string
+  playstyle?: string
+  rating?: number
 }
 
 let cachedPool: DraftPlayer[] | null = null
@@ -28,7 +31,9 @@ export function getAllRealPlayers(): DraftPlayer[] {
 
   for (const league of LEAGUES) {
     for (const club of league.clubs) {
-      for (const player of club.players) {
+      // Use the full squad when available (real-player clubs), otherwise the starting XI.
+      const roster = club.squad ?? club.players
+      for (const player of roster) {
         pool.push({
           name: player.name,
           number: player.number,
@@ -39,7 +44,10 @@ export function getAllRealPlayers(): DraftPlayer[] {
           clubShortName: club.shortName,
           clubColor: club.color,
           leagueName: league.name,
-          overall: computeOverall(player.attrs),
+          overall: player.rating ?? computeOverall(player.attrs),
+          nationality: player.nationality,
+          playstyle: player.playstyle,
+          rating: player.rating,
         })
       }
     }

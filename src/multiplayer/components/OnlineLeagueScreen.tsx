@@ -4,7 +4,6 @@ import { getDraftPicks } from '../api/draft'
 import { getLeagueMatches, updateMatchResult, advanceLeagueWeek } from '../api/matches'
 import { fastSimulate } from '../../match/engine/FastSimulator'
 import { clubToTeamData } from '../../match/engine/TeamConverter'
-import { MatchControls } from '../../match/components/MatchControls'
 import { StatsPanel } from '../../match/components/StatsPanel'
 import { EventFeed } from '../../match/components/EventFeed'
 import { MatchEngine } from '../../match/engine/MatchEngine'
@@ -92,14 +91,13 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
   const [state, setState] = useState<MatchState | null>(null)
 
   const storeSetMatchState = useMatchStore(s => s.setMatchState)
-  const storeSetEngineRef = useMatchStore(s => s.setEngineRef)
-  const storeSetJumpedIn = useMatchStore(s => s.setJumpedIn)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const renderer = new MatchRenderer(canvas)
 
+    // Set deterministic seed so both players see the exact same match
     const seed = seedFromString(homeTeam.id + awayTeam.id + homeTeam.name + awayTeam.name)
     setMatchSeed(seed)
     const engine = new MatchEngine({
@@ -123,18 +121,28 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
         }
       },
     })
-    storeSetEngineRef({ current: engine })
-    storeSetJumpedIn(false)
+
+    // Lock speed at 1x — speed changes would desync the two players' simulations
+    engine.setSpeed(1)
     engine.start()
 
     const handleResize = () => { if (canvas) renderer.resize(canvas) }
     window.addEventListener('resize', handleResize)
     return () => { engine.destroy(); window.removeEventListener('resize', handleResize) }
-  }, [homeTeam, awayTeam, homeTeam.id, awayTeam.id, storeSetMatchState, storeSetEngineRef, storeSetJumpedIn])
+  }, [homeTeam, awayTeam, homeTeam.id, awayTeam.id, storeSetMatchState])
 
   async function handleFinish() {
     if (result) onFinish(result)
   }
+
+  const homeScore = result?.homeGoals ?? 0
+  const awayScore = result?.awayGoals ?? 0
+  const isDraw = homeScore === awayScore
+  const homeWon = homeScore > awayScore
+  const winnerName = isDraw ? null : (homeWon ? homeTeam.name : awayTeam.name)
+  const winnerColor = isDraw ? null : (homeWon ? homeTeam.color : awayTeam.color)
+
+  const confettiColors = ['#e74c3c', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#e67e22', '#1abc9c', '#ff6b6b', '#ffd93d', '#6bcb77']
 
   return (
     <div className="match-screen">
@@ -149,14 +157,60 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
           />
           {finished && (
             <div className="match-end-overlay">
+              {/* Confetti particles */}
+              <div className="confetti-container" aria-hidden="true">
+                {confettiColors.map((color, i) => (
+                  <div
+                    key={i}
+                    className="confetti-piece"
+                    style={{
+                      '--confetti-color': color,
+                      '--confetti-x': `${Math.random() * 100}%`,
+                      '--confetti-delay': `${Math.random() * 2}s`,
+                      '--confetti-duration': `${2 + Math.random() * 3}s`,
+                      '--confetti-rotation': `${Math.random() * 360}deg`,
+                      '--confetti-size': `${6 + Math.random() * 8}px`,
+                    } as React.CSSProperties}
+                  />
+                ))}
+              </div>
+
               <div className="match-end-content">
-                <h2>Full Time</h2>
+                {/* Winner announcement */}
+                {!isDraw && winnerName && (
+                  <div className={`winner-announcement ${homeWon ? 'winner-home' : 'winner-away'}`}>
+                    <span className="winner-trophy">🏆</span>
+                    <span className="winner-label">Winner</span>
+                    <span className="winner-name" style={{ color: winnerColor ?? undefined }}>
+                      {winnerName}
+                    </span>
+                  </div>
+                )}
+                {isDraw && (
+                  <div className="winner-announcement winner-draw">
+                    <span className="winner-trophy">🤝</span>
+                    <span className="winner-label">Draw</span>
+                    <span className="winner-name">It's a Draw!</span>
+                  </div>
+                )}
+
+                <h2 className="fulltime-label">Full Time</h2>
+
                 <div className="match-end-score">
-                  <span>{homeTeam.shortName}</span>
-                  <span className="match-end-num">{result?.homeGoals ?? 0} - {result?.awayGoals ?? 0}</span>
-                  <span>{awayTeam.shortName}</span>
+                  <div className="match-end-team">
+                    <div className="match-end-dot" style={{ backgroundColor: homeTeam.color }} />
+                    <span className="match-end-team-name">{homeTeam.name}</span>
+                    <span className="match-end-team-short">{homeTeam.shortName}</span>
+                  </div>
+                  <span className="match-end-num">{homeScore} - {awayScore}</span>
+                  <div className="match-end-team">
+                    <div className="match-end-dot" style={{ backgroundColor: awayTeam.color }} />
+                    <span className="match-end-team-name">{awayTeam.name}</span>
+                    <span className="match-end-team-short">{awayTeam.shortName}</span>
+                  </div>
                 </div>
-                <button onClick={handleFinish} className="ol-btn ol-btn-play">
+
+                <button onClick={handleFinish} className="ol-btn ol-btn-play winner-continue-btn">
                   Continue
                 </button>
               </div>
@@ -168,7 +222,12 @@ function OnlineMatchView({ homeTeam, awayTeam, onFinish }: {
           <EventFeed />
         </div>
       </div>
-      <MatchControls />
+      <div className="match-bar">
+        <span className="ol-sim-spinner" />
+        <span style={{ fontSize: 13, color: 'rgba(0,255,65,0.5)' }}>
+          Match in progress — locked at real-time speed
+        </span>
+      </div>
     </div>
   )
 }

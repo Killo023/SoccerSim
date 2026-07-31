@@ -334,6 +334,10 @@ export function OnlineDraftScreen({ leagueId }: { leagueId: string }) {
                     <span className="mp-draft-card-dot" style={{ background: player.clubColor }} />
                     <span>{player.clubShortName}</span>
                   </div>
+                  <div className="mp-draft-card-meta">
+                    {player.playstyle && <span className="mp-draft-card-playstyle">{player.playstyle}</span>}
+                    {player.nationality && <span className="mp-draft-card-nation">{player.nationality}</span>}
+                  </div>
                   <div className="mp-draft-card-attrs">
                     <div className="mp-draft-attr"><span>PAC</span><span>{player.attrs.pace}</span></div>
                     <div className="mp-draft-attr"><span>SHO</span><span>{player.attrs.shooting}</span></div>

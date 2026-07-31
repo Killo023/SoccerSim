@@ -2,6 +2,7 @@ import { Club } from '../types'
 import { PREMIER_LEAGUE_TEAMS } from './premierLeague'
 import { LA_LIGA_TEAMS } from './laLiga'
 import { CHAMPIONS_LEAGUE_TEAMS } from './championsLeague'
+import { CHAMPIONSHIP_TEAMS } from './championship'
 import {
   SAUDI_TEAMS,
   UAE_TEAMS,
@@ -33,6 +34,14 @@ export const LEAGUES: LeagueDefinition[] = [
     clubs: LA_LIGA_TEAMS,
     tier: 1,
     region: 'Spain',
+  },
+  {
+    id: 'championship',
+    name: 'Championship',
+    shortName: 'CHAMP',
+    clubs: CHAMPIONSHIP_TEAMS,
+    tier: 2,
+    region: 'England',
   },
   {
     id: 'champions-league',

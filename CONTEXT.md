@@ -167,6 +167,7 @@ The engine should now produce realistic spread and continuous ball movement with
 - The `claim_match` RPC does not exist on the Supabase database; `handlePlayMatch` opens the 2D match directly without DB claiming. Result is saved when the match finishes. The second player to finish sees the match is already finished and does not overwrite.
 - Auto-sim race condition: both players' browsers independently run auto-sim. The `advanceLeagueWeek` call uses `expectedWeek` guard to prevent double-advancing, and the auto-sim re-syncs from DB when the week jumps ahead.
 - Auto-sim previously could restart from week 1 after a 2D match finishes. Fixed by always reading current_week from DB at the start of `runAutoSimulate` instead of relying on potentially stale local state.
+- **Online match determinism lock** (July 2026): Removed `MatchControls` (speed/jump-in controls) from `OnlineMatchView` and locked `engine.setSpeed(1)`. Previously, each player could independently change speed (0.5x–4x) or jump into control a player, which caused the two local simulations to diverge. With speed locked to 1x and no controls, both engines produce identical deterministic output from the same seeded RNG.
 
 ### Other
 - (none reported)
