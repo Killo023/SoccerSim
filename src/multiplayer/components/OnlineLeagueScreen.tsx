@@ -775,7 +775,10 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     if (!pvpMatch) return
     const match = pvpMatch
     const report = match.report
-    playingRef.current = false
+
+    // Keep playingRef true through the whole save flow. If it flips to false
+    // before pvpMatch is cleared, the 2s poller can re-detect this same still-
+    // pending match and re-open the PvP view ("back to the lobby").
 
     // --- Read the authoritative DB state first ---
     const { data: existing } = await supabase.from('matches').select('status,home_goals,away_goals').eq('id', match.matchId).maybeSingle()
@@ -784,6 +787,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       // Another player already saved the result.
       // Refresh local data so we don't show stale standings, then continue auto-sim.
       setPvpMatch(null)
+      setShowReplay(false)
       const [refreshedM, refreshedL] = await Promise.all([
         getLeagueMatches(leagueId),
         getLeague(leagueId),
@@ -801,6 +805,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         leagueRef.current = rl2
         setLeague(rl2)
       }
+      playingRef.current = false
       if (!allFin && !runningRef.current) {
         runAutoSimulate()
       }
@@ -833,6 +838,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
     }
 
     setPvpMatch(null)
+    setShowReplay(false)
 
     // --- Advance the week using a compare-and-swap so only ONE player advances ---
     // (both players finish the same deterministic match at roughly the same time)
@@ -866,6 +872,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
       setLeague(rl2)
     }
 
+    playingRef.current = false
     if (!allFin && !runningRef.current) {
       runAutoSimulate()
     }
@@ -986,6 +993,7 @@ export function OnlineLeagueScreen({ leagueId }: { leagueId: string }) {
         <h1>{leagueName}</h1>
         <span className="ol-season-badge">Season 1</span>
         <span className="ol-season-badge">{allTeams.length} teams</span>
+        <span className="ol-build" title="Build id (both players must match for identical 2D results)">Build {__BUILD_ID__}</span>
         <button className="ol-btn ol-btn-small" onClick={handleRefresh} style={{ marginLeft: 'auto', padding: '4px 12px' }}>⟳</button>
       </div>
 

@@ -586,6 +586,14 @@ html, body, #app {
   box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
 }
 
+.menu-build {
+  margin-top: 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.25);
+}
+
 /* League Screen */
 .league-screen {
   height: 100vh;
@@ -2250,6 +2258,17 @@ html, body, #app {
   color: rgba(0, 255, 65, 0.55);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.ol-build {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.5px;
+  font-family: ui-monospace, monospace;
 }
 
 .ol-progress-bar {

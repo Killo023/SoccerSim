@@ -96,6 +96,10 @@ export function MainMenu() {
             <div className="progress-fill" style={{ width: `${(league.fixtures.filter(f => f.played).length / league.fixtures.length) * 100}%` }} />
           </div>
         </div>
+
+        <div className="menu-build" title="Build id (both players must match for identical 2D results)">
+          Build {__BUILD_ID__}
+        </div>
       </div>
     </div>
   )
