@@ -31,15 +31,16 @@ src/
 │   ├── types.ts           # Vec2, Player, Ball, TeamData, MatchState, FORMATIONS constant
 │   ├── constants.ts       # Pitch dimensions, physics params, speed options
 │   ├── engine/
-│   │   ├── MatchEngine.ts     # Game loop (requestAnimationFrame), physics + AI orchestration
-│   │   ├── PlayerAI.ts        # AI states: chase, dribble, pass, shoot, support, retreat, mark
+│   │   ├── MatchEngine.ts     # Game loop (requestAnimationFrame), physics + AI orchestration. The visual/real-time sim.
+│   │   ├── PlayerAI.ts        # AI states: chase, dribble, pass, shoot, support, retreat, mark. Formation-aware via getFormationPos(i, side, formation)
 │   │   ├── BallPhysics.ts     # Position updates, friction, boundary/goal collision, kickBall
 │   │   ├── MatchEvents.ts     # Goal detection, shots, out-of-play, ball touch
 │   │   ├── MatchSimulator.ts  # Wrapper for MatchEngine
-│   │   ├── FastSimulator.ts   # Headless batch simulation (no canvas)
+│   │   ├── FastSimulator.ts   # Headless batch simulation (no canvas) — AI weeks. NOTE: NOT identical to MatchEngine (different dt, extra shot-hack, no halves)
+│   │   ├── NarrativeSimulator.ts # Deterministic stats-based PvP match report (seed `narrative:<names>`) — currently the SAVED result, differs from 2D
 │   │   ├── TeamConverter.ts   # Club → TeamData conversion
 │   │   ├── LLMSimulator.ts    # Calls https://mlvoca.com/api/generate (tinyllama) for AI commentary
-│   │   └── rng.ts            # Seeded deterministic PRNG (mulberry32) for cross-device result consistency
+│   │   └── rng.ts            # Seeded deterministic PRNG (mulberry32) via setMatchSeed/seedFromString — ONLY randomness in the sim path
 │   ├── renderer/
 │   │   ├── MatchRenderer.ts   # Orchestrates rendering + scoreboard/clock HUD
 │   │   ├── PitchRenderer.ts   # Pitch lines, goals, penalty areas, center circle
@@ -52,7 +53,8 @@ src/
 │       ├── MatchControls.tsx   # Play/pause, speed, jump in/out
 │       ├── StatsPanel.tsx      # Live stats (possession, shots, goals)
 │       ├── EventFeed.tsx       # Scrollable event log
-│       └── LLMMatchView.tsx    # Play-by-play LLM commentary feed with scoreboard
+│       ├── LLMMatchView.tsx    # Play-by-play LLM commentary feed with scoreboard
+│       └── OnlineNarrativeMatchView.tsx # Deterministic PvP report: preview → live feed → full-time; "Watch 2D Replay" button
 ├── multiplayer/      # Friends league system (pass-and-play)
 │   ├── types.ts           # PlayerProfile, CustomTeam, DraftSlot, FormationName, TEAM_COLORS
 │   ├── store.ts           # Zustand store: players, teams, phases, smart fast-forward
@@ -67,6 +69,7 @@ src/
 │   └── matchStore.ts   # Live match state, engine ref
 ├── App.tsx             # Routes: menu | league | cup | match | multiplayer
 ├── main.tsx            # React entry point
+├── vite-env.d.ts       # Declares __BUILD_ID__ (git short hash injected via vite define)
 └── style.css           # All styles (~1900 lines)
 ```
 
@@ -99,7 +102,8 @@ npm run build  # Production build
 - Possession tracking, stats panel, event feed
 - Speed controls (0.5x/1x/2x/4x), pause/play (functional in OnlineMatchView)
 - Jump-in player control: click player → WASD/E/Q, J to jump out
-- **Deterministic PRNG** (mulberry32, seeded from match ID): both players see identical results across all devices
+- **Formation-aware positioning**: `getFormationPos(i, side, formation?)` in `PlayerAI.ts` derives each player's home row/x from the team's actual `Position[]` formation (4-4-2, 4-3-3, 4-2-3-1, 3-5-2, 4-3-2-1). MatchEngine + FastSimulator pass formations through. Previously hardcoded 4-4-2 for everyone.
+- **Deterministic PRNG** (mulberry32, seeded via `setMatchSeed(seedFromString(...))`): the ONLY randomness in the sim path. `Math.random`/`Date.now`/`performance.now` are confined to cosmetic code (PlayerRenderer leg-swing, MatchEndOverlay confetti, RAF timing accumulator) and never feed the sim, so both players' 2D engines produce identical output from the same seed + code.
 
 ### Match Engine Fixes (July 2026)
 The following bugs were fixed in the physics engine to resolve the "22 players cluster in one spot" issue:
@@ -142,10 +146,13 @@ The engine should now produce realistic spread and continuous ball movement with
 ### Online League (Friends League 2.0)
 - League creation with invite code, online sync via Supabase (RLS-protected)
 - Auto-simulates AI weeks in the background; pauses automatically when it's your human-vs-human matchup
-- **Auto-popup 2D match**: when the sim reaches your vs-friend week, the real-time physics canvas opens automatically (no button press needed)
-- Both players see the **same deterministic result** (seeded PRNG based on match ID — identical goals, shots, possession on every device)
+- **Auto-popup PvP match**: when the sim reaches your vs-friend week, the deterministic narrative PvP sim opens automatically (preview → live feed → full-time). "Watch 2D Replay" switches to the real-time 2D physics canvas.
+- The PvP report is generated by `NarrativeSimulator` (seed `narrative:<home>|<away>|...`) and is what's saved to the league — identical on every device. The 2D replay is a **separate deterministic `MatchEngine` run** (seed `homeId+awayId+homeName+awayName`) that does NOT currently match the narrative score (see Known Issues — planned fix: make the 2D the single source of truth).
 - Match result is saved once and never overwritten by a second player
-- Speed controls (0.5x/1x/2x/4x) for the 2D match view
+- Both the narrative feed (1x/2x/4x) and the 2D replay (0.5x–4x) have speed controls; the live 2D is locked at 1x with no jump-in (determinism lock)
+- Replay "Continue" and narrative "Continue" both call `handlePvPFinish`, which saves → fast-sims remaining AI week matches → CAS-advances the week → refreshes to the league table
+- `handlePvPFinish` holds `playingRef` true through the save flow so the 2s poller can't re-open the same match (fixed re-open race)
+- **Build stamp**: `__BUILD_ID__` (git short hash, via `vite define`) shown in the main menu footer and online-league header — both players must show the same id for identical 2D results
 - Manual refresh button and 2s polling for live data sync
 - League auto-advances weeks after match finishes; auto-sim continues from current week (never resets to week 1)
 - 20 total teams per league (dynamic bot count based on human player count)
@@ -180,19 +187,26 @@ The engine should now produce realistic spread and continuous ball movement with
 - If clustering still occurs, next debugging step: add console.log tracing of AI state machine transitions to identify remaining edge cases.
 - AI Commentary (LLM) mode remains available as an alternative.
 - Match engine results are now deterministic across devices (seeded mulberry32 PRNG based on match ID). Both players see identical goals, shots, and possession.
+- **Out-of-play restarts are rough** (`MatchEngine.ts:248-272`): when the ball leaves play, everything freezes for a 2s cooldown, then the nearest restart-team player is teleported onto the ball. Opponents aren't repositioned for goal kicks/corners/throw-ins, and the teleport restart feels broken. Planned polish: shorter cooldown with formation repositioning, proper goal-kick/corner/throw-in placement, no teleport.
 
 ### Online League
+- **Three simulators disagree — the "2D game is not the same game" bug (Aug 2026)**: for human-vs-human PvP there are three independent deterministic simulators producing different matches: `NarrativeSimulator` (currently the SAVED result, seed `narrative:<home>|<away>|...`), the 2D `MatchEngine` replay (seed `homeId+awayId+homeName+awayName`), and `FastSimulator` (AI weeks only — different dt + extra shot-hack, no halves). The 2D game a player watches can end 2-1 while the narrative/saved result says 1-0. **DECISION: make the 2D `MatchEngine` the single source of truth for PvP** — auto-open the same deterministic 2D for both players and save the 2D result; demote the narrative to a preview whose score matches the 2D. (Chosen by user — implementation pending.)
+- **PvP 2D is not live-synced**: each device replays the same seeded 2D locally from minute 0; there is no server-authoritative stream. Two players watching at different wall-clock times (or after a page reload) look unsynced even though the sim sequence is identical. Determinism only holds when both are on the same build — verify via `__BUILD_ID__`.
+- **Stale bundle causes real divergence**: a player on an older deployed bundle runs old sim code (e.g., pre-formation `getFormationPos` = hardcoded 4-4-2, old replay `onFinish` → returns to lobby) and sees a different 2D game + old redirect behavior. Fix: hard-refresh / clear site data and confirm both show the same `__BUILD_ID__`.
 - The `claim_match` RPC does not exist on the Supabase database; `handlePlayMatch` opens the 2D match directly without DB claiming. Result is saved when the match finishes. The second player to finish sees the match is already finished and does not overwrite.
 - Auto-sim race condition: both players' browsers independently run auto-sim. The `advanceLeagueWeek` call uses `expectedWeek` guard to prevent double-advancing, and the auto-sim re-syncs from DB when the week jumps ahead.
 - Auto-sim previously could restart from week 1 after a 2D match finishes. Fixed by always reading current_week from DB at the start of `runAutoSimulate` instead of relying on potentially stale local state.
 - **Online match determinism lock** (July 2026): Removed `MatchControls` (speed/jump-in controls) from `OnlineMatchView` and locked `engine.setSpeed(1)`. Previously, each player could independently change speed (0.5x–4x) or jump into control a player, which caused the two local simulations to diverge. With speed locked to 1x and no controls, both engines produce identical deterministic output from the same seeded RNG.
+- **Re-open race fixed** (Aug 2026): `handlePvPFinish` used to clear `playingRef` at the top, leaving a window where the 2s poller could re-detect the still-`pending` match and re-open the PvP lobby after "Continue". Now `playingRef` stays true until `pvpMatch`/`showReplay` are cleared, and both branches clear `showReplay` too.
 
 ### Other
 - (none reported)
 
 ## Next Steps (Suggested)
-1. Add goal scorer tracking / player stats persistence across league season
-2. Add save/load (localStorage serialization)
-3. Add substitution/formation editing during match
-4. Add yellow/red card system
-5. Mobile responsive layout improvements (sidebar stacking)
+1. **Make the 2D `MatchEngine` the single source of truth for online PvP** (decided Aug 2026): auto-open the same deterministic 2D match for both players, save the 2D result (not the narrative report), and demote the narrative to a pre-match preview whose prediction/score always matches the 2D. This removes the "three simulators disagree" bug.
+2. **Polish out-of-play restarts** in `MatchEngine.ts`: shorter cooldown, players reposition to formation, proper goal-kick/corner/throw-in placement, no teleport-to-ball restart.
+3. Add goal scorer tracking / player stats persistence across league season
+4. Add save/load (localStorage serialization)
+5. Add substitution/formation editing during match
+6. Add yellow/red card system
+7. Mobile responsive layout improvements (sidebar stacking)
